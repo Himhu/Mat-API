@@ -149,6 +149,31 @@ describe('App mobile sidebar', () => {
     vi.clearAllMocks();
   });
 
+  it.each([768, 1280])('keeps gateway navigation without the retired external monitor at width %i', async (width) => {
+    setupRuntime(width);
+    let root!: WebTestRenderer;
+
+    try {
+      await act(async () => {
+        root = create(<MemoryRouter initialEntries={['/']}><App /></MemoryRouter>);
+      });
+      await flushMicrotasks();
+      if (width <= 768) {
+        await act(async () => {
+          root.root.find((node) => node.type === 'button' && node.props['aria-label'] === '打开导航').props.onClick();
+        });
+        await flushMicrotasks();
+      }
+
+      const links = root.root.findAllByType('a').map((node) => node.props.href);
+      expect(links).toContain('/routes');
+      expect(links).toContain('/accounts');
+      expect(links).not.toContain('/monitor');
+    } finally {
+      if (root) await act(async () => root.unmount());
+    }
+  });
+
   it('opens the mobile drawer from the hamburger trigger and exposes the close affordance', async () => {
     setupRuntime(768);
     let root!: WebTestRenderer;

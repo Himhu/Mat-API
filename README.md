@@ -168,10 +168,6 @@
       <img src="docs/screenshots/proxy-logs.png" alt="proxy-logs" style="width:100%;height:auto;"/>
       <div><b>使用日志</b> — 代理请求日志与成本明细</div>
     </td>
-    <td align="center">
-      <img src="docs/screenshots/monitor.png" alt="monitor" style="width:100%;height:auto;"/>
-      <div><b>可用性监控</b> — 通道健康度实时监测</div>
-    </td>
   </tr>
   <tr>
     <td align="center">

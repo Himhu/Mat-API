@@ -2,7 +2,7 @@
 
 **注意：以下内容适用于有一定技术能力的用户，否则请跳过此页面！！！**
 
-本文档说明如何直接调用 Metapi 管理后台的 `/api/*` 接口，用脚本完成站点与账号管理。
+本文档说明如何直接调用 Mat-API 管理后台的 `/api/*` 接口，用脚本完成站点与账号管理。
 
 [返回文档维护页](./README.md)
 
@@ -16,7 +16,7 @@
 
 - 初始化新实例，批量导入站点和账号
 - 用 Shell / Python / CI 脚本维护现有管理数据
-- 在外部系统里接入 Metapi 后台能力，而不是手工点页面
+- 在外部系统里接入 Mat-API 后台能力，而不是手工点页面
 
 > [!IMPORTANT]
 > 本页介绍的是 **管理 API**，不是下游客户端调用的 `/v1/*` 代理接口。
@@ -33,7 +33,7 @@ Authorization: Bearer <AUTH_TOKEN>
 
 其中：
 
-- `AUTH_TOKEN` 就是你启动 Metapi 时配置的管理员令牌
+- `AUTH_TOKEN` 就是你启动 Mat-API 时配置的管理员令牌
 - 如果你后来在「设置」里修改过管理员令牌，脚本里也要同步改成新值
 - 管理端如果启用了 `ADMIN_IP_ALLOWLIST`，脚本调用方的来源 IP 也必须命中白名单
 
@@ -621,7 +621,7 @@ curl -sS "${METAPI_ADMIN_BASE_URL}/api/oauth/sessions/oauth-state-123" \
 
 `POST /api/oauth/sessions/:state/manual-callback`
 
-当浏览器已经完成授权，但回调没有自动打到 Metapi 时，可以手动提交最终 callback URL。
+当浏览器已经完成授权，但回调没有自动打到 Mat-API 时，可以手动提交最终 callback URL。
 
 ```bash
 curl -sS "${METAPI_ADMIN_BASE_URL}/api/oauth/sessions/oauth-state-123/manual-callback" \

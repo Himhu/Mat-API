@@ -1,3 +1,5 @@
+import { join } from 'node:path';
+
 type DesktopServerEnvInput = {
   inheritedEnv?: NodeJS.ProcessEnv;
   userDataDir: string;
@@ -83,4 +85,16 @@ export async function waitForServerReady(input: WaitForServerReadyInput): Promis
 
 export function isFatalServerExit(exitState: ServerExitState): boolean {
   return exitState.code !== null && exitState.code !== 0 && !exitState.signal;
+}
+
+// Preserve the original desktop data directory when upgrading to Mat-API.
+export function resolveDesktopUserDataPath(
+  appDataPath: string,
+  currentPath: string,
+  pathExists: (path: string) => boolean,
+): string {
+  if (pathExists(currentPath)) return currentPath;
+  return ['Metapi', 'metapi']
+    .map((name) => join(appDataPath, name))
+    .find(pathExists) ?? currentPath;
 }

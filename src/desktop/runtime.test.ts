@@ -1,9 +1,11 @@
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import {
   buildDesktopServerEnv,
   createDesktopServerUrl,
   isFatalServerExit,
   resolveDesktopServerPort,
+  resolveDesktopUserDataPath,
   resolveDesktopServerWorkingDir,
   waitForServerReady,
 } from './runtime.js';
@@ -44,10 +46,10 @@ describe('desktop runtime helpers', () => {
 
   it('uses resources path as backend cwd for packaged desktop builds', () => {
     expect(resolveDesktopServerWorkingDir({
-      appPath: 'C:/Users/test/AppData/Local/Programs/Metapi/resources/app.asar',
-      resourcesPath: 'C:/Users/test/AppData/Local/Programs/Metapi/resources',
+      appPath: 'C:/Users/test/AppData/Local/Programs/Mat-API/resources/app.asar',
+      resourcesPath: 'C:/Users/test/AppData/Local/Programs/Mat-API/resources',
       isPackaged: true,
-    })).toBe('C:/Users/test/AppData/Local/Programs/Metapi/resources');
+    })).toBe('C:/Users/test/AppData/Local/Programs/Mat-API/resources');
 
     expect(resolveDesktopServerWorkingDir({
       appPath: '/workspace/metapi',
@@ -87,5 +89,21 @@ describe('desktop runtime helpers', () => {
     expect(isFatalServerExit({ code: 1, signal: null })).toBe(true);
     expect(isFatalServerExit({ code: 0, signal: null })).toBe(false);
     expect(isFatalServerExit({ code: null, signal: 'SIGTERM' })).toBe(false);
+  });
+});
+
+
+describe('desktop data directory after rebranding', () => {
+  it.each(['Metapi', 'metapi'])('reuses an existing %s data directory', (legacyName) => {
+    const legacy = join('/apps', legacyName);
+    expect(resolveDesktopUserDataPath('/apps', '/apps/Mat-API', (path) => path === legacy)).toBe(legacy);
+  });
+
+  it('keeps the new application directory when it already exists', () => {
+    expect(resolveDesktopUserDataPath('/apps', '/apps/Mat-API', () => true)).toBe('/apps/Mat-API');
+  });
+
+  it('uses the new application directory for a fresh installation', () => {
+    expect(resolveDesktopUserDataPath('/apps', '/apps/Mat-API', () => false)).toBe('/apps/Mat-API');
   });
 });

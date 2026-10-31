@@ -238,7 +238,7 @@ async function testSystemProxyConnectivity(proxyUrl: string) {
         signal: controller.signal,
         headers: {
           'cache-control': 'no-cache',
-          'user-agent': 'metapi-system-proxy-tester/1.0',
+          'user-agent': 'Mat-API-system-proxy-tester/1.0',
         },
       }),
     );

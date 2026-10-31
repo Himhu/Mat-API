@@ -1,4 +1,4 @@
-# Metapi Harness Engineering
+# Mat-API Harness Engineering
 
 This document captures the repo-level engineering taste that should remain true
 even when future work is performed by autonomous agents. The goal is not to

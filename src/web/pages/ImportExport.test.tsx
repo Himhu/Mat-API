@@ -126,7 +126,7 @@ const allApiHubV2Payload = JSON.stringify({
   },
 });
 
-const nativeMetapiPayload = JSON.stringify({
+const nativeBackupPayload = JSON.stringify({
   version: '2.1',
   timestamp: 1735689600000,
   accounts: {
@@ -214,7 +214,7 @@ describe('ImportExport', () => {
       success: true,
       config: {
         enabled: true,
-        fileUrl: 'https://dav.example.com/backups/metapi.json',
+        fileUrl: 'https://dav.example.com/backups/Mat-API.json',
         username: 'alice',
         exportType: 'all',
         autoSyncEnabled: true,
@@ -231,7 +231,7 @@ describe('ImportExport', () => {
       success: true,
       config: {
         enabled: true,
-        fileUrl: 'https://dav.example.com/backups/metapi.json',
+        fileUrl: 'https://dav.example.com/backups/Mat-API.json',
         username: 'alice',
         exportType: 'all',
         autoSyncEnabled: true,
@@ -246,7 +246,7 @@ describe('ImportExport', () => {
     });
     apiMock.exportBackupToWebdav.mockResolvedValue({
       success: true,
-      fileUrl: 'https://dav.example.com/backups/metapi.json',
+      fileUrl: 'https://dav.example.com/backups/Mat-API.json',
       exportType: 'all',
     });
     apiMock.importBackupFromWebdav.mockResolvedValue({
@@ -321,7 +321,7 @@ describe('ImportExport', () => {
 
       const textarea = root!.root.findByType('textarea');
       await act(async () => {
-        textarea.props.onChange({ target: { value: nativeMetapiPayload } });
+        textarea.props.onChange({ target: { value: nativeBackupPayload } });
       });
       await flushMicrotasks();
 
@@ -459,7 +459,7 @@ describe('ImportExport', () => {
 
       const fileUrlInput = root!.root.findAll((node) => (
         node.type === 'input'
-        && node.props.placeholder === 'https://dav.example.com/backups/metapi.json'
+        && node.props.placeholder === 'https://dav.example.com/backups/Mat-API.json'
       )).at(-1);
       const cronInput = root!.root.findAll((node) => (
         node.type === 'input'
@@ -507,7 +507,7 @@ describe('ImportExport', () => {
 
       const fileUrlInput = root!.root.findAll((node) => (
         node.type === 'input'
-        && node.props.placeholder === 'https://dav.example.com/backups/metapi.json'
+        && node.props.placeholder === 'https://dav.example.com/backups/Mat-API.json'
       )).at(-1);
 
       expect(fileUrlInput).toBeTruthy();
@@ -538,7 +538,7 @@ describe('ImportExport', () => {
       success: true,
       config: {
         enabled: true,
-        fileUrl: 'https://dav.example.com/backups/metapi.json',
+        fileUrl: 'https://dav.example.com/backups/Mat-API.json',
         username: 'alice',
         exportType: 'all',
         autoSyncEnabled: true,

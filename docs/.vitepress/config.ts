@@ -44,8 +44,8 @@ if (!sanitizeUrlSourceEntry) {
 export default withMermaid(
   defineConfig({
     lang: 'zh-CN',
-    title: 'Metapi 文档',
-    description: 'Metapi 使用文档、FAQ 与维护协作指南',
+    title: 'Mat-API 文档',
+    description: 'Mat-API 使用文档、FAQ 与维护协作指南',
     head: [
       ['link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon.png' }],
       ['link', { rel: 'icon', type: 'image/png', sizes: '64x64', href: '/favicon-64.png' }],
@@ -63,7 +63,7 @@ export default withMermaid(
       },
     },
     themeConfig: {
-      siteTitle: 'Metapi Docs',
+      siteTitle: 'Mat-API Docs',
       logo: '/logos/logo-icon-512.png',
       nav: [
         { text: '首页', link: '/' },
@@ -72,7 +72,7 @@ export default withMermaid(
         { text: 'OAuth 管理', link: '/oauth' },
         { text: 'FAQ', link: '/faq' },
         { text: '文档维护', link: '/README' },
-        { text: '项目主页', link: 'https://github.com/cita-777/metapi' },
+        { text: '项目主页', link: 'https://github.com/Himhu/Mat-API' },
       ],
       sidebar: [
         {
@@ -106,14 +106,14 @@ export default withMermaid(
         },
       ],
       socialLinks: [
-        { icon: 'github', link: 'https://github.com/cita-777/metapi' },
+        { icon: 'github', link: 'https://github.com/Himhu/Mat-API' },
       ],
       outline: {
         level: [2, 3],
       },
       footer: {
         message: 'MIT Licensed',
-        copyright: 'Copyright (c) 2026 Metapi Contributors',
+        copyright: 'Copyright (c) 2026 Mat-API Contributors',
       },
       search: {
         provider: 'local',

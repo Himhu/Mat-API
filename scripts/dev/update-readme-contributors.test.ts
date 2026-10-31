@@ -51,7 +51,7 @@ describe('README contributors updater', () => {
 
   it('replaces the marked README section with an avatar wall', () => {
     const readme = [
-      '# Metapi',
+      '# Mat-API',
       '',
       '<!-- metapi-contributors:start -->',
       'old block',

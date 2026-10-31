@@ -3,7 +3,7 @@ import { readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const MAC_BINARY_SEGMENTS = ['Metapi.app', 'Contents', 'MacOS', 'Metapi'];
+const MAC_BINARY_SEGMENTS = ['Mat-API.app', 'Contents', 'MacOS', 'Mat-API'];
 
 function walkDirectories(rootDir) {
   const queue = [rootDir];

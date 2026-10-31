@@ -4729,7 +4729,7 @@ describe('chat proxy stream behavior', () => {
   it('returns synthetic Anthropic web_search server tool results without adding a new search dependency', async () => {
     fetchMock.mockResolvedValue(new Response(JSON.stringify({
       object: 'search.result',
-      data: [{ title: 'Metapi', url: 'https://example.com/metapi' }],
+      data: [{ title: 'Mat-API', url: 'https://example.com/metapi' }],
     }), {
       status: 200,
       headers: { 'content-type': 'application/json' },
@@ -4770,7 +4770,7 @@ describe('chat proxy stream behavior', () => {
   it('streams synthetic Anthropic web_search server tool results over SSE', async () => {
     fetchMock.mockResolvedValue(new Response(JSON.stringify({
       object: 'search.result',
-      data: [{ title: 'Metapi SSE' }],
+      data: [{ title: 'Mat-API SSE' }],
     }), {
       status: 200,
       headers: { 'content-type': 'application/json' },
@@ -4798,7 +4798,7 @@ describe('chat proxy stream behavior', () => {
   it('returns synthetic Responses web_search results without touching completions upstreams', async () => {
     fetchMock.mockResolvedValue(new Response(JSON.stringify({
       object: 'search.result',
-      data: [{ title: 'Metapi Responses', url: 'https://example.com/responses' }],
+      data: [{ title: 'Mat-API Responses', url: 'https://example.com/responses' }],
     }), {
       status: 200,
       headers: { 'content-type': 'application/json' },
@@ -4827,7 +4827,7 @@ describe('chat proxy stream behavior', () => {
 
     const body = response.json();
     expect(body.object).toBe('response');
-    expect(body.output_text).toContain('Metapi Responses');
+    expect(body.output_text).toContain('Mat-API Responses');
     expect(body.output?.[0]).toMatchObject({
       type: 'web_search_call',
       status: 'completed',
@@ -4836,7 +4836,7 @@ describe('chat proxy stream behavior', () => {
         query: 'metapi responses web search',
       },
     });
-    expect(body.output?.[1]?.content?.[0]?.text).toContain('Metapi Responses');
+    expect(body.output?.[1]?.content?.[0]?.text).toContain('Mat-API Responses');
   });
 
   it('routes gemini platform to OpenAI-compatible upstream endpoint path', async () => {

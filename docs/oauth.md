@@ -1,6 +1,6 @@
 # 🔐 OAuth 管理
 
-本文档介绍 Metapi 里的「OAuth 管理」页面，适合需要直接授权 provider 账号的场景。
+本文档介绍 Mat-API 里的「OAuth 管理」页面，适合需要直接授权 provider 账号的场景。
 
 [返回文档中心](/)
 
@@ -20,7 +20,7 @@
 这类接法的特点是：
 
 - 使用浏览器授权，而不是手填用户名密码
-- 授权成功后，Metapi 会自动创建或复用对应 provider 的站点
+- 授权成功后，Mat-API 会自动创建或复用对应 provider 的站点
 - 账号会按 OAuth 连接保存，后续刷新和重绑也走同一套流程
 
 如果你接的是 New API、One API、Sub2API、CPA、OpenAI-compatible、Claude-compatible 这类**普通站点或网关**，请看 [上游接入](/upstream-integration)。
@@ -56,7 +56,7 @@ OAuth 管理
 
 使用 Gemini CLI 或 Antigravity 时，先按 [配置说明](/configuration#_2-oauth-与-provider-登录) 设置对应的 `GEMINI_CLI_CLIENT_ID` / `GEMINI_CLI_CLIENT_SECRET` 或 `ANTIGRAVITY_CLIENT_ID` / `ANTIGRAVITY_CLIENT_SECRET`，并重启服务。这些值必须来自你有权使用的 OAuth 客户端，且该客户端须支持对应上游服务和回调地址；项目不提供内置凭据，也不保证任意 Google OAuth 客户端都能访问对应服务。
 
-### 1. 确保 Metapi 能访问 provider 的 OAuth 端点
+### 1. 确保 Mat-API 能访问 provider 的 OAuth 端点
 
 如果你的部署环境访问外网受限，可以：
 
@@ -67,9 +67,9 @@ OAuth 管理
 
 ### 2. 远程部署要提前考虑回调方式
 
-OAuth 默认使用 Metapi 本机上的 loopback 回调地址，例如本机 `127.0.0.1` 端口。
+OAuth 默认使用 Mat-API 本机上的 loopback 回调地址，例如本机 `127.0.0.1` 端口。
 
-如果你的 Metapi 跑在远程服务器上，而浏览器跑在本地电脑上，常见做法有两个：
+如果你的 Mat-API 跑在远程服务器上，而浏览器跑在本地电脑上，常见做法有两个：
 
 1. **SSH 隧道**：按页面给出的命令，把回调端口转发到远端
 2. **手动回填 callback URL**：如果浏览器已经完成授权，但自动回调没打通，可把最终回调地址手动贴回管理页
@@ -94,7 +94,7 @@ OAuth 连接更适合“provider 原生账号授权”，而不是：
 
 页面会为 provider 发起一个 OAuth 会话，并弹出授权窗口。
 
-Metapi 会同时给出：
+Mat-API 会同时给出：
 
 - 授权链接
 - 本机回调端口
@@ -103,7 +103,7 @@ Metapi 会同时给出：
 
 ### 步骤 3：在 provider 页面完成授权
 
-完成授权后，Metapi 会轮询当前会话状态：
+完成授权后，Mat-API 会轮询当前会话状态：
 
 - `pending`：等待回调
 - `success`：授权成功
@@ -111,7 +111,7 @@ Metapi 会同时给出：
 
 ### 步骤 4：必要时手动回填 callback URL
 
-如果弹窗里已经能看到类似 `...?code=...&state=...` 的回调地址，但 Metapi 页面还没成功：
+如果弹窗里已经能看到类似 `...?code=...&state=...` 的回调地址，但 Mat-API 页面还没成功：
 
 1. 复制浏览器最终回调 URL
 2. 回到「OAuth 管理」
@@ -143,7 +143,7 @@ Metapi 会同时给出：
 
 ## 自动生成的站点有什么用
 
-OAuth 成功后，Metapi 会确保对应 provider 的站点存在。这样做是为了让 OAuth 连接也能融入现有的：
+OAuth 成功后，Mat-API 会确保对应 provider 的站点存在。这样做是为了让 OAuth 连接也能融入现有的：
 
 - 站点列表
 - 路由通道
@@ -154,7 +154,7 @@ OAuth 成功后，Metapi 会确保对应 provider 的站点存在。这样做是
 
 - 它们通常不是拿来手动登录的
 - 不要把它理解成“我又多了一个可签到的面板站”
-- 更准确地说，它是 OAuth 账号在 Metapi 里的宿主站点
+- 更准确地说，它是 OAuth 账号在 Mat-API 里的宿主站点
 
 ---
 
@@ -208,7 +208,7 @@ OAuth 成功后，Metapi 会确保对应 provider 的站点存在。这样做是
 
 ### OAuth 成功后为什么还会在站点管理看到一行站点
 
-这是预期行为。Metapi 需要一个明确的站点记录来承载：
+这是预期行为。Mat-API 需要一个明确的站点记录来承载：
 
 - 账号所属平台
 - 路由与通道归属

@@ -1,4 +1,4 @@
-# Metapi 变更日志
+# Mat-API 变更日志
 
 > 这是当前项目的持续变更记录。后续每次新增功能、修复缺陷、调整接口或修改文档，都要在本文件追加一条记录，不能只修改代码而不记录。
 
@@ -40,7 +40,7 @@
 ### 2. Rerank 代理接口
 
 - **类型**：功能实现
-- **需求来源**：[GitHub Issue #591](https://github.com/cita-777/metapi/issues/591)
+- **需求来源**：[GitHub Issue #591](https://github.com/Himhu/Mat-API/issues/591)
 - **目标**：新增 `POST /v1/rerank`，复用现有的鉴权、模型路由、站点 API 地址池、重试、用量解析、计费和代理日志链路。
 - **实现范围**：
   - 增加 Rerank 路由，校验 `model`，将请求转发到选中的上游 `/v1/rerank`。
@@ -60,7 +60,7 @@
 ### 3. 路由优先级与 P0/P1/P2
 
 - **类型**：缺陷修复
-- **需求来源**：[GitHub Issue #590](https://github.com/cita-777/metapi/issues/590)
+- **需求来源**：[GitHub Issue #590](https://github.com/Himhu/Mat-API/issues/590)
 - **目标**：新建通道进入当前路由的下一优先级；拖拽或批量更新后优先级保持连续并和页面展示一致。
 - **实现范围**：
   - 创建通道时按当前路由已有最大优先级计算默认值，不再把所有新通道固定为 `P0`。
@@ -81,7 +81,7 @@
 ### 4. Coding Plan v3 URL 拼接
 
 - **类型**：缺陷修复
-- **需求来源**：[GitHub Issue #586](https://github.com/cita-777/metapi/issues/586)
+- **需求来源**：[GitHub Issue #586](https://github.com/Himhu/Mat-API/issues/586)
 - **目标**：当上游 Base URL 已经以 `/v3` 等版本段结尾时，不要把下游请求的 `/v1` 重复拼接到 URL 中。
 - **实现范围**：
   - URL 拼接逻辑识别末尾 `/vN` 版本段。
@@ -97,7 +97,7 @@
 ### 5. 渠道失败隔离
 
 - **类型**：缺陷修复
-- **需求来源**：[GitHub Issue #585](https://github.com/cita-777/metapi/issues/585)
+- **需求来源**：[GitHub Issue #585](https://github.com/Himhu/Mat-API/issues/585)
 - **目标**：一个渠道失败时，只更新实际失败渠道的冷却和失败状态，不影响同凭据的其他渠道，也不误触发站点级运行时熔断。
 - **实现范围**：
   - 429 用量限流只冷却本次实际失败的 channel。
@@ -153,7 +153,7 @@ npx vitest run --pool=threads --poolOptions.threads.singleThread=true <test-file
 ### 9. 提交到上游仓库的独立分支
 
 - **类型**：版本交付
-- **需求来源**：本会话需求：[Metapi 仓库](https://github.com/cita-777/metapi)
+- **需求来源**：本会话需求：[Mat-API 仓库](https://github.com/Himhu/Mat-API)
 - **目标**：将本地已完成的站点独立并发、Rerank 和四个 Issue 修复提交到上游仓库的独立分支，不直接修改 `main`。
 - **实现范围**：以远程 `main` 为基线创建 `codex/metapi-issues-591-590-586-585`，迁移代码、测试、数据库迁移产物、需求文档、持续日志和演示 PDF。
 - **主要文件**：
@@ -181,7 +181,7 @@ npx vitest run --pool=threads --poolOptions.threads.singleThread=true <test-file
 - **类型**：版本交付
 - **需求来源**：本会话需求
 - **目标**：请求上游仓库审核本次站点并发控制、Rerank 及四个 Issue 修复。
-- **实现范围**：创建 [PR #609](https://github.com/cita-777/metapi/pull/609)，源分支为 `lengxiaouser:codex/metapi-issues-591-590-586-585`，目标为 `cita-777:main`。
+- **实现范围**：创建 [PR #609](https://github.com/Himhu/Mat-API/pull/609)，源分支为 `lengxiaouser:codex/metapi-issues-591-590-586-585`，目标为 `cita-777:main`。
 - **验证**：GitHub API 返回 PR 编号 `609`，状态为 `open`；PR 描述已包含 Issue 链接、验证命令和变更范围。
 - **状态**：已提交，等待上游审核。
 
@@ -190,7 +190,7 @@ npx vitest run --pool=threads --poolOptions.threads.singleThread=true <test-file
 ### 12. 修复 CodeRabbit PR 审查问题
 
 - **类型**：缺陷修复与架构重构
-- **需求来源**：CodeRabbit 对 [PR #609](https://github.com/cita-777/metapi/pull/609) 的审查；对应 Issue：[#591](https://github.com/cita-777/metapi/issues/591)、[#590](https://github.com/cita-777/metapi/issues/590)、[#586](https://github.com/cita-777/metapi/issues/586)、[#585](https://github.com/cita-777/metapi/issues/585)
+- **需求来源**：CodeRabbit 对 [PR #609](https://github.com/Himhu/Mat-API/pull/609) 的审查；对应 Issue：[#591](https://github.com/Himhu/Mat-API/issues/591)、[#590](https://github.com/Himhu/Mat-API/issues/590)、[#586](https://github.com/Himhu/Mat-API/issues/586)、[#585](https://github.com/Himhu/Mat-API/issues/585)
 - **目标**：修复站点并发租约释放、并发超时误判、路由通道优先级竞态、Rerank 路由职责过重和变更日志字段不完整等问题。
 - **实现范围**：
   - 流式响应交接后暂停后台续租，按真实读取进度续租；读取失败先取消 reader，再释放站点租约。
@@ -225,7 +225,7 @@ npx vitest run --pool=threads --poolOptions.threads.singleThread=true <test-file
 ### 13. 修复 CodeRabbit follow-up 审查问题
 
 - **类型**：缺陷修复与文档修正
-- **需求来源**：CodeRabbit 对 [PR #609](https://github.com/cita-777/metapi/pull/609) 的 follow-up 审查
+- **需求来源**：CodeRabbit 对 [PR #609](https://github.com/Himhu/Mat-API/pull/609) 的 follow-up 审查
 - **目标**：修复 Issue 链接的 Markdown 空格，并确保手工通道传入的明确优先级不会被自动分配逻辑覆盖。
 - **实现范围**：
   - 将 `[ #591]` 修正为 `[#591]`，并确认 PR/Issue 链接均为合法 Markdown。
@@ -250,7 +250,7 @@ npx vitest run --pool=threads --poolOptions.threads.singleThread=true <test-file
 ### YYYY-MM-DD - 简短标题
 
 - **类型**：功能实现 / 缺陷修复 / 重构 / 文档
-- **需求来源**：[Issue #N](https://github.com/cita-777/metapi/issues/N) 或本会话需求
+- **需求来源**：[Issue #N](https://github.com/Himhu/Mat-API/issues/N) 或本会话需求
 - **目标**：
 - **实现范围**：
 - **主要文件**：

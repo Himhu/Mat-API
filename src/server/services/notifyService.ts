@@ -78,7 +78,7 @@ function buildTelegramText(
   timeFootnote: string,
 ): string {
   const maxTextLength = 3900;
-  const raw = `[metapi][${level.toUpperCase()}] ${title}\n\n${message}\n\nLevel: ${level}\n${timeFootnote}`;
+  const raw = `[Mat-API][${level.toUpperCase()}] ${title}\n\n${message}\n\nLevel: ${level}\n${timeFootnote}`;
   if (raw.length <= maxTextLength) return raw;
   return `${raw.slice(0, maxTextLength)}\n\n...(truncated)`;
 }
@@ -99,7 +99,7 @@ function buildWeComText(
   timeFootnote: string,
 ): string {
   const maxLength = 1900;
-  const raw = `[metapi][${level.toUpperCase()}] ${title}\n\n${message}\n\n${timeFootnote}`;
+  const raw = `[Mat-API][${level.toUpperCase()}] ${title}\n\n${message}\n\n${timeFootnote}`;
   if (raw.length <= maxLength) return raw;
   return `${raw.slice(0, maxLength)}\n...(truncated)`;
 }
@@ -123,7 +123,7 @@ function buildFeishuText(
   timeFootnote: string,
 ): string {
   const maxLength = 3900;
-  const raw = `[metapi][${level.toUpperCase()}] ${title}\n\n${message}\n\n${timeFootnote}`;
+  const raw = `[Mat-API][${level.toUpperCase()}] ${title}\n\n${message}\n\n${timeFootnote}`;
   if (raw.length <= maxLength) return raw;
   return `${raw.slice(0, maxLength)}\n...(truncated)`;
 }
@@ -315,7 +315,7 @@ export async function sendNotification(
         run: () => transporter.sendMail({
           from: config.smtpFrom,
           to: config.smtpTo,
-          subject: `[metapi][${level.toUpperCase()}] ${title}`,
+          subject: `[Mat-API][${level.toUpperCase()}] ${title}`,
           text: `${resolvedMessage}\n\nLevel: ${level}\n${timeFootnote}`,
         }),
       },

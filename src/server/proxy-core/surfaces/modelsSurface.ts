@@ -135,7 +135,7 @@ export async function listModelsSurface(input: ModelsSurfaceInput) {
       id: model.id,
       object: 'model' as const,
       created: Math.floor(now.getTime() / 1000),
-      owned_by: 'metapi',
+      owned_by: 'Mat-API',
       context_length: resolveModelContextLength(model.actualModel || model.id, model.selectedAccountId, model.candidates),
     })),
   };

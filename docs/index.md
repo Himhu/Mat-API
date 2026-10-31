@@ -2,12 +2,12 @@
 layout: home
 
 hero:
-  name: "Metapi 文档中心"
+  name: "Mat-API 文档中心"
   text: "中转站的中转站"
   tagline: "将分散的 AI 中转站聚合为一个统一网关"
   image:
     src: /logos/logo-full.png
-    alt: Metapi
+    alt: Mat-API
   actions:
     - theme: brand
       text: 10 分钟快速上手
@@ -39,7 +39,7 @@ features:
 <div class="home-architecture">
   <img
     src="./screenshots/metapi-architecture.png"
-    alt="Metapi Federated AI Model Aggregation Gateway Architecture"
+    alt="Mat-API Federated AI Model Aggregation Gateway Architecture"
   />
 </div>
 

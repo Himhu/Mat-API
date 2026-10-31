@@ -833,7 +833,7 @@ export class Sub2ApiAdapter extends BasePlatformAdapter {
   ): Promise<boolean> {
     const normalizedBase = normalizeBaseUrl(baseUrl);
     const payload: Record<string, unknown> = {
-      name: (options?.name || '').trim() || 'metapi',
+      name: (options?.name || '').trim() || 'Mat-API',
     };
 
     const groupId = Number.parseInt((options?.group || '').trim(), 10);

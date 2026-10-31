@@ -11,12 +11,12 @@ function collectText(node: ReactTestInstance): string {
 }
 
 describe('Login surface', () => {
-  it('uses the site root as the documentation URL', () => {
-    expect(SITE_DOCS_URL).toBe('https://metapi.cita777.me');
+  it('uses the fork documentation URL', () => {
+    expect(SITE_DOCS_URL).toBe('https://github.com/Himhu/Mat-API/blob/main/docs/README.md');
   });
 
-  it('uses the author github profile for the login github shortcut', () => {
-    expect(SITE_GITHUB_URL).toBe('https://github.com/cita-777');
+  it('uses the fork repository for the login github shortcut', () => {
+    expect(SITE_GITHUB_URL).toBe('https://github.com/Himhu/Mat-API');
   });
 
   it('renders a poster-style hero with a floating admin login panel', () => {
@@ -42,7 +42,7 @@ describe('Login surface', () => {
         && node.props.className.includes('brand-mark-canvas')
       ));
 
-      expect(pageText).toContain('Metapi');
+      expect(pageText).toContain('Mat-API');
       expect(pageText).toContain('中转站的中转站');
       expect(pageText).not.toContain('一个 API Key，一个入口');
       expect(pageText).toContain('兼容 New API / One API / OneHub / DoneHub / Veloera / AnyRouter / Sub2API');

@@ -1323,6 +1323,7 @@ export const api = {
       body: JSON.stringify(data),
       timeoutMs: 120_000,
     }),
+  getDownstreamUpstreamGroups: () => request<{items:Array<{siteId:number;siteName:string;group:string;ratios:number[];hasUnknownRatio:boolean;credentialCount:number;models:string[]}>;unknownCredentialCount:number}>("/api/downstream-keys/upstream-groups", {timeoutMs:120_000}),
   getDownstreamApiKeys: () => request("/api/downstream-keys"),
   createDownstreamApiKey: (data: any) =>
     request("/api/downstream-keys", {

@@ -3238,6 +3238,14 @@ export class TokenRouter {
   ): string | null {
     if (!downstreamPolicy) return null;
 
+    const groupScope = downstreamPolicy.allowedUpstreamGroups;
+    if (groupScope != null) {
+      const tokenGroup = candidate.token?.tokenGroup?.trim();
+      if (!candidate.token?.tokenGroupConfirmed || !tokenGroup || !groupScope.some((entry) => entry.siteId === candidate.site.id && entry.group === tokenGroup)) {
+        return '渠道不在下游密钥授权的上游分组内';
+      }
+    }
+
     const excludedSiteIds = Array.isArray(downstreamPolicy.excludedSiteIds)
       ? downstreamPolicy.excludedSiteIds
       : [];

@@ -31,6 +31,7 @@ import {
 type Status = 'all' | 'enabled' | 'disabled';
 
 type DownstreamApiKeyItem = {
+  allowedUpstreamGroups?: Array<{siteId:number;group:string}> | null;
   id: number;
   name: string;
   key: string;
@@ -337,6 +338,7 @@ function buildEditorForm(
     : defaultSelections.selectedGroupRouteIds;
 
   return {
+    allowedUpstreamGroups: item ? (item.allowedUpstreamGroups ?? null) : [],
     name: item?.name || '',
     key: item?.key || '',
     description: item?.description || '',
@@ -373,7 +375,7 @@ function summarizeRouteLimit(routeIds: number[], routeMap: Map<number, RouteSele
 
 function summarizeSiteWeightMultipliers(weights: Record<number, number> | undefined): string {
   const entries = Object.entries(weights || {});
-  if (entries.length === 0) return '默认倍率';
+  if (entries.length === 0) return '默认路由权重';
   if (entries.length === 1) return `${entries[0][0]} => ${entries[0][1]}`;
   return `${entries[0][0]} => ${entries[0][1]} +${entries.length - 1}`;
 }
@@ -632,6 +634,7 @@ export default function DownstreamKeys() {
         key: raw?.key,
         keyMasked: raw?.keyMasked || item.keyMasked,
         description: raw?.description ?? item.description,
+        allowedUpstreamGroups: raw?.allowedUpstreamGroups ?? item.allowedUpstreamGroups ?? null,
         groupName: raw?.groupName ?? item.groupName,
         tags: raw?.tags ?? item.tags,
         enabled: raw?.enabled ?? item.enabled,
@@ -662,7 +665,7 @@ export default function DownstreamKeys() {
 
   const groupFilterOptions = useMemo(
     () => [
-      { value: '__all__', label: '全部主分组' },
+      { value: '__all__', label: '全部密钥分类' },
       { value: '__ungrouped__', label: '未分组' },
       ...groupSuggestions.map((group) => ({ value: group, label: group })),
     ],
@@ -831,7 +834,7 @@ export default function DownstreamKeys() {
       try {
         const parsed = JSON.parse(rawWeights);
         if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-          toast.info('站点倍率必须是 JSON 对象');
+          toast.info('站点路由权重必须是 JSON 对象');
           return;
         }
         siteWeightMultipliers = Object.fromEntries(
@@ -840,7 +843,7 @@ export default function DownstreamKeys() {
             .filter(([siteId, value]) => Number.isFinite(siteId) && siteId > 0 && Number.isFinite(value) && value > 0),
         ) as Record<number, number>;
       } catch {
-        toast.info('站点倍率 JSON 解析失败');
+        toast.info('站点路由权重 JSON 解析失败');
         return;
       }
     }
@@ -858,7 +861,12 @@ export default function DownstreamKeys() {
         && normalizedSelectedGroupRouteIds.length === defaultRouteSelections.selectedGroupRouteIds.length
         && normalizedSelectedGroupRouteIds.every((id, index) => id === defaultRouteSelections.selectedGroupRouteIds[index]);
 
+      if (editorForm.allowedUpstreamGroups !== null && editorForm.allowedUpstreamGroups.length === 0) {
+        toast.info('请至少选择一个上游分组');
+        return;
+      }
       const payload = {
+        allowedUpstreamGroups: editorForm.allowedUpstreamGroups,
         name,
         key,
         description: editorForm.description.trim(),
@@ -995,7 +1003,7 @@ export default function DownstreamKeys() {
 
   const runBatchMetadata = async () => {
     if (batchMetadataForm.groupOperation === 'set' && !batchMetadataForm.groupName.trim()) {
-      toast.info('请填写批量主分组');
+      toast.info('请填写批量密钥分类');
       return;
     }
     if (batchMetadataForm.tagOperation === 'append' && normalizeTags(batchMetadataForm.tags).length === 0) {
@@ -1016,7 +1024,7 @@ export default function DownstreamKeys() {
             <input
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="搜索名称、备注、模型、主分组或标签"
+              placeholder="搜索名称、备注、模型、密钥分类或标签"
             />
           </div>
           <InlineToggle value={tagMatchMode} onChange={setTagMatchMode} />
@@ -1075,7 +1083,7 @@ export default function DownstreamKeys() {
       <div className="page-header" style={{ marginBottom: 0 }}>
         <div>
           <h2 className="page-title">下游密钥</h2>
-          <div className="page-subtitle">统一管理分发给下游项目的密钥、主分组、标签、额度、模型白名单、群组范围与历史用量。</div>
+          <div className="page-subtitle">统一管理分发给下游项目的密钥、密钥分类、标签、额度、模型白名单、群组范围与历史用量。</div>
         </div>
         <div className="page-actions">
           <RangeToggle range={range} onChange={setRange} />
@@ -1133,7 +1141,7 @@ export default function DownstreamKeys() {
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
             <div>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>筛选与列表</div>
-              <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>按名称、状态、主分组和标签快速定位下游密钥。</div>
+              <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>按名称、状态、密钥分类和标签快速定位下游密钥。</div>
             </div>
             {isMobile && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
@@ -1210,11 +1218,12 @@ export default function DownstreamKeys() {
                     stacked
                   />
                   {row.description ? <MobileField label="备注" value={row.description} stacked /> : null}
-                  <MobileField label="主分组" value={row.groupName || '未分组'} />
+                  <MobileField label="密钥分类" value={row.groupName || '未分组'} />
+                  <MobileField label="上游分组" value={row.allowedUpstreamGroups == null ? '不限（兼容原配置）' : row.allowedUpstreamGroups.map(g=>`#${g.siteId} / ${g.group}`).join('、') || '未授权'} stacked />
                   <MobileField label="标签" value={summarizeTags(row.tags || [])} stacked />
                   <MobileField label="模型" value={summarizeModelSelection(row.supportedModels || [])} stacked />
                   <MobileField label="群组" value={summarizeRouteSelection(row.allowedRouteIds || [], routeMap)} stacked />
-                  <MobileField label="倍率" value={summarizeSiteWeightMultipliers(row.siteWeightMultipliers || {})} stacked />
+                  <MobileField label="路由权重" value={summarizeSiteWeightMultipliers(row.siteWeightMultipliers || {})} stacked />
                   <MobileField label="额度" value={`${row.maxRequests == null ? '不限' : row.maxRequests.toLocaleString()} / ${row.maxCost == null ? '成本不限' : formatMoney(row.maxCost)}`} stacked />
                   <MobileField label="用量" value={`${(row.rangeUsage?.totalRequests || 0).toLocaleString()} 请求 · ${formatCompactTokens(row.rangeUsage?.totalTokens || 0)}`} stacked />
                   <MobileField label="最近使用" value={formatIso(row.lastUsedAt)} stacked />
@@ -1261,7 +1270,7 @@ export default function DownstreamKeys() {
                         {row.description ? <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', maxWidth: 320 }}>{row.description}</div> : null}
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
                           <span className={`badge ${row.groupName ? 'badge-info' : 'badge-muted'}`} style={{ fontSize: 11 }}>
-                            {row.groupName ? `主分组 · ${row.groupName}` : '未分组'}
+                            {row.groupName ? `密钥分类 · ${row.groupName}` : '未分组'}
                           </span>
                           <TagChips tags={row.tags || []} maxVisible={3} />
                         </div>
@@ -1269,9 +1278,10 @@ export default function DownstreamKeys() {
                       <td>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                           <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>模型：<span style={{ color: 'var(--color-text-primary)' }}>{summarizeModelSelection(row.supportedModels || [])}</span></div>
+                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>上游分组：{row.allowedUpstreamGroups == null ? '不限（兼容原配置）' : row.allowedUpstreamGroups.map(g=>`#${g.siteId} / ${g.group}`).join('、') || '未授权'}</div>
                           <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>群组：<span style={{ color: 'var(--color-text-primary)' }}>{summarizeRouteSelection(row.allowedRouteIds || [], routeMap)}</span></div>
                           <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>标签：<span style={{ color: 'var(--color-text-primary)' }}>{summarizeTags(row.tags || [])}</span></div>
-                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>倍率：<span style={{ color: 'var(--color-text-primary)' }}>{summarizeSiteWeightMultipliers(row.siteWeightMultipliers || {})}</span></div>
+                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>路由权重：<span style={{ color: 'var(--color-text-primary)' }}>{summarizeSiteWeightMultipliers(row.siteWeightMultipliers || {})}</span></div>
                         </div>
                       </td>
                       <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
@@ -1347,18 +1357,18 @@ export default function DownstreamKeys() {
         )}
       >
         <div className="info-tip" style={{ marginBottom: 0 }}>
-          本次会对已选中的 {selectedIds.length} 个密钥批量设置主分组，并追加标签。不会改动模型白名单、群组范围、额度和倍率。
+          本次会对已选中的 {selectedIds.length} 个密钥批量设置密钥分类，并追加标签。不会改动模型白名单、群组范围、额度和倍率。
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>主分组操作</div>
+            <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>密钥分类操作</div>
             <ModernSelect
               value={batchMetadataForm.groupOperation}
               onChange={(value) => setBatchMetadataForm((prev) => ({ ...prev, groupOperation: String(value) as BatchMetadataForm['groupOperation'] }))}
               options={[
-                { value: 'keep', label: '不改动主分组' },
-                { value: 'set', label: '统一设为主分组' },
-                { value: 'clear', label: '清空主分组' },
+                { value: 'keep', label: '不改动密钥分类' },
+                { value: 'set', label: '统一设为密钥分类' },
+                { value: 'clear', label: '清空密钥分类' },
               ]}
             />
             <input

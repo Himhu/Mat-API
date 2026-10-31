@@ -1,0 +1,1 @@
+ALTER TABLE `downstream_api_keys` ADD `allowed_upstream_groups` text;

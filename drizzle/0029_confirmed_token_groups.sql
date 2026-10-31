@@ -1,0 +1,1 @@
+ALTER TABLE `account_tokens` ADD `token_group_confirmed` integer DEFAULT false NOT NULL;

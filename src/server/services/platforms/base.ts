@@ -226,7 +226,7 @@ export abstract class BasePlatformAdapter implements PlatformAdapter {
   async getApiTokens(baseUrl: string, accessToken: string, platformUserId?: number): Promise<ApiTokenInfo[]> {
     const token = await this.getApiToken(baseUrl, accessToken, platformUserId);
     if (!token) return [];
-    return [{ name: 'default', key: token, enabled: true, tokenGroup: 'default' }];
+    return [{ name: 'default', key: token, enabled: true, tokenGroup: undefined }];
   }
 
   async getSiteAnnouncements(

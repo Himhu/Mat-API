@@ -1,3 +1,4 @@
+import { listDownstreamUpstreamGroups } from '../../services/downstreamUpstreamGroupService.js';
 import { FastifyInstance } from 'fastify';
 import { and, eq, inArray, sql, type SQL } from 'drizzle-orm';
 import { db, hasProxyLogDownstreamApiKeyIdColumn, runtimeDbDialect, schema } from '../../db/index.js';
@@ -135,11 +136,18 @@ function resolveRangeSinceUtc(range: DownstreamKeyRange): string | null {
 }
 
 async function validatePolicyReferences(input: {
+  allowedUpstreamGroups?: Array<{siteId:number;group:string}> | null;
   allowedRouteIds: number[];
   siteWeightMultipliers: Record<number, number>;
   excludedSiteIds: number[];
   excludedCredentialRefs: DownstreamExcludedCredentialRef[];
 }): Promise<string | null> {
+  for (const entry of input.allowedUpstreamGroups || []) {
+    const token = await db.select({id:schema.accountTokens.id}).from(schema.accountTokens)
+      .innerJoin(schema.accounts, eq(schema.accountTokens.accountId, schema.accounts.id))
+      .where(and(eq(schema.accounts.siteId, entry.siteId), eq(schema.accountTokens.tokenGroup, entry.group), eq(schema.accountTokens.tokenGroupConfirmed, true))).get();
+    if (!token) return `站点 ${entry.siteId} 的上游分组 ${entry.group} 没有已接入的 API Key`;
+  }
   const routeIds = input.allowedRouteIds || [];
   if (routeIds.length > 0) {
     const rows = await db.select({ id: schema.tokenRoutes.id })
@@ -471,6 +479,8 @@ export async function downstreamApiKeysRoutes(app: FastifyInstance) {
     };
   });
 
+  app.get('/api/downstream-keys/upstream-groups', async () => listDownstreamUpstreamGroups());
+
   app.post<{ Body: unknown }>('/api/downstream-keys', async (request, reply) => {
     const parsedBody = parseDownstreamApiKeyPayload(request.body);
     if (!parsedBody.success) {
@@ -495,6 +505,7 @@ export async function downstreamApiKeysRoutes(app: FastifyInstance) {
       return reply.code(400).send({ success: false, message: 'key 必须以 sk- 开头且长度至少 6' });
     }
     const policyRefError = await validatePolicyReferences({
+      allowedUpstreamGroups: normalized.allowedUpstreamGroups,
       allowedRouteIds: normalized.allowedRouteIds,
       siteWeightMultipliers: normalized.siteWeightMultipliers,
       excludedSiteIds: normalized.excludedSiteIds,
@@ -523,6 +534,7 @@ export async function downstreamApiKeysRoutes(app: FastifyInstance) {
           maxRequests: normalized.maxRequests,
           usedRequests: 0,
           supportedModels: toPersistenceJson(normalized.supportedModels),
+          allowedUpstreamGroups: normalized.allowedUpstreamGroups === null ? null : JSON.stringify(normalized.allowedUpstreamGroups),
           allowedRouteIds: toPersistenceJson(normalized.allowedRouteIds),
           siteWeightMultipliers: toPersistenceJson(normalized.siteWeightMultipliers),
           excludedSiteIds: toPersistenceJson(normalized.excludedSiteIds),
@@ -581,6 +593,7 @@ export async function downstreamApiKeysRoutes(app: FastifyInstance) {
         maxCost: hasOwn('maxCost') ? body.maxCost : existing.maxCost,
         maxRequests: hasOwn('maxRequests') ? body.maxRequests : existing.maxRequests,
         supportedModels: hasOwn('supportedModels') ? body.supportedModels : existingView.supportedModels,
+        allowedUpstreamGroups: hasOwn('allowedUpstreamGroups') ? body.allowedUpstreamGroups : existingView.allowedUpstreamGroups,
         allowedRouteIds: hasOwn('allowedRouteIds') ? body.allowedRouteIds : existingView.allowedRouteIds,
         siteWeightMultipliers: hasOwn('siteWeightMultipliers') ? body.siteWeightMultipliers : existingView.siteWeightMultipliers,
         excludedSiteIds: hasOwn('excludedSiteIds') ? body.excludedSiteIds : existingView.excludedSiteIds,
@@ -600,6 +613,10 @@ export async function downstreamApiKeysRoutes(app: FastifyInstance) {
       return reply.code(400).send({ success: false, message: 'key 必须以 sk- 开头且长度至少 6' });
     }
     const policyRefError = await validatePolicyReferences({
+      // Keep unavailable existing selections restrictive; validate only newly granted groups.
+      allowedUpstreamGroups: normalized.allowedUpstreamGroups?.filter((entry) =>
+        !existingView.allowedUpstreamGroups?.some((existingGroup) =>
+          existingGroup.siteId === entry.siteId && existingGroup.group === entry.group)),
       allowedRouteIds: normalized.allowedRouteIds,
       siteWeightMultipliers: normalized.siteWeightMultipliers,
       excludedSiteIds: normalized.excludedSiteIds,
@@ -622,7 +639,8 @@ export async function downstreamApiKeysRoutes(app: FastifyInstance) {
         maxCost: normalized.maxCost,
         maxRequests: normalized.maxRequests,
         supportedModels: toPersistenceJson(normalized.supportedModels),
-        allowedRouteIds: toPersistenceJson(normalized.allowedRouteIds),
+        allowedUpstreamGroups: normalized.allowedUpstreamGroups === null ? null : JSON.stringify(normalized.allowedUpstreamGroups),
+          allowedRouteIds: toPersistenceJson(normalized.allowedRouteIds),
         siteWeightMultipliers: toPersistenceJson(normalized.siteWeightMultipliers),
         excludedSiteIds: toPersistenceJson(normalized.excludedSiteIds),
         excludedCredentialRefs: toPersistenceJson(normalized.excludedCredentialRefs),

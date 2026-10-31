@@ -1,3 +1,4 @@
+import UpstreamGroupSelector, { type UpstreamGroupRef } from './UpstreamGroupSelector.js';
 import React, { useEffect, useMemo, useState } from 'react';
 import CenteredModal from '../../components/CenteredModal.js';
 import { generateDownstreamSkKey } from '../helpers/generateDownstreamSkKey.js';
@@ -18,6 +19,7 @@ export type DownstreamExcludedCredentialRef =
   };
 
 export type DownstreamKeyEditorForm = {
+  allowedUpstreamGroups: UpstreamGroupRef[] | null;
   name: string;
   key: string;
   description: string;
@@ -367,6 +369,7 @@ export default function DownstreamKeyEditorModal({
         支持为每个下游密钥独立配置分组、标签、额度与有效期。高级限制项可按需展开。
       </div>
 
+      {open && <UpstreamGroupSelector value={form.allowedUpstreamGroups} onChange={value=>onChange(prev=>({...prev,allowedUpstreamGroups:value}))} allowUnrestricted={!!editingItem}/>}
       <div className="downstream-key-modal-grid" style={{ gridTemplateColumns: '1fr' }}>
         <div className="downstream-key-modal-field downstream-key-modal-field-full">
           <div className="downstream-key-modal-label">名称</div>
@@ -392,7 +395,7 @@ export default function DownstreamKeyEditorModal({
           </div>
         </div>
         <div className="downstream-key-modal-field">
-          <div className="downstream-key-modal-label">主分组</div>
+          <div className="downstream-key-modal-label">密钥分类</div>
           <input
             value={form.groupName}
             onChange={(e) => onChange((prev) => ({ ...prev, groupName: e.target.value }))}
@@ -451,14 +454,14 @@ export default function DownstreamKeyEditorModal({
         {advancedOpen ? (
           <div className="downstream-key-advanced-content">
             <div className="downstream-key-modal-field downstream-key-modal-field-full">
-              <div className="downstream-key-modal-label">站点倍率 JSON</div>
+              <div className="downstream-key-modal-label">站点路由权重 JSON</div>
               <textarea
                 value={form.siteWeightMultipliersText}
                 onChange={(e) => onChange((prev) => ({ ...prev, siteWeightMultipliersText: e.target.value }))}
                 placeholder={'例如：{\n  "1": 1.2,\n  "7": 0.8\n}'}
                 style={{ ...inputStyle, minHeight: 96, resize: 'vertical', fontFamily: 'var(--font-mono)' }}
               />
-              <div className="downstream-key-modal-help">用于对特定站点做分发倍率微调；留空或 `{}` 表示走默认倍率。</div>
+              <div className="downstream-key-modal-help">用于对特定站点做分发权重微调；留空或 `{}` 表示走默认路由权重。</div>
             </div>
 
             <div className="downstream-key-advanced-grid" style={{ gridTemplateColumns: '1fr' }}>

@@ -67,6 +67,12 @@
           "notNull": true,
           "defaultValue": "'ready'",
           "primaryKey": false
+        },
+        "token_group_confirmed": {
+          "logicalType": "boolean",
+          "notNull": true,
+          "defaultValue": "false",
+          "primaryKey": false
         }
       }
     },
@@ -528,6 +534,12 @@
         },
         "excluded_credential_refs": {
           "logicalType": "json",
+          "notNull": false,
+          "defaultValue": null,
+          "primaryKey": false
+        },
+        "allowed_upstream_groups": {
+          "logicalType": "text",
           "notNull": false,
           "defaultValue": null,
           "primaryKey": false

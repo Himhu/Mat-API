@@ -35,6 +35,7 @@ export interface PricingModel {
 interface PricingData {
   models: Map<string, PricingModel>;
   groupRatio: Record<string, number>;
+  reportedGroupRatio: Record<string, number>;
 }
 
 export interface ProxyBillingPricingOverride {
@@ -104,6 +105,7 @@ interface ModelPricingCatalogEntry {
 interface ModelPricingCatalog {
   models: ModelPricingCatalogEntry[];
   groupRatio: Record<string, number>;
+  reportedGroupRatio: Record<string, number>;
 }
 
 export interface ProxyBillingDetails {
@@ -166,6 +168,15 @@ function normalizeModelPrice(value: unknown): number | { input: number; output: 
     input: Number.isNaN(input) ? 0 : input,
     output: Number.isNaN(output) ? 0 : output,
   };
+}
+
+function readReportedGroupRatio(raw: unknown): Record<string, number> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  return Object.fromEntries(Object.entries(raw).flatMap(([key, value]) => {
+    if ((typeof value !== 'number' && typeof value !== 'string') || String(value).trim() === '') return [];
+    const ratio = Number(value);
+    return Number.isFinite(ratio) && ratio >= 0 ? [[key, ratio]] : [];
+  }));
 }
 
 function normalizeGroupRatio(raw: unknown): Record<string, number> {
@@ -276,7 +287,7 @@ function normalizeCommonPricingPayload(payload: unknown): PricingData | null {
   if (models.size === 0) return null;
 
   const groupRatio = normalizeGroupRatio((payload as any)?.group_ratio);
-  return { models, groupRatio };
+  return { models, groupRatio, reportedGroupRatio: readReportedGroupRatio((payload as any)?.group_ratio) };
 }
 
 function normalizeOneHubPricingPayload(availablePayload: unknown, groupPayload: unknown): PricingData | null {
@@ -322,12 +333,12 @@ function normalizeOneHubPricingPayload(availablePayload: unknown, groupPayload: 
   const groupRatioSource: Record<string, number> = {};
   if (groupMap && typeof groupMap === 'object') {
     for (const [key, group] of Object.entries(groupMap as Record<string, any>)) {
-      groupRatioSource[key] = toNumber(group?.ratio, 1);
+      groupRatioSource[key] = toNumber(group?.ratio, Number.NaN);
     }
   }
 
   const groupRatio = normalizeGroupRatio(groupRatioSource);
-  return { models, groupRatio };
+  return { models, groupRatio, reportedGroupRatio: readReportedGroupRatio(groupRatioSource) };
 }
 
 async function fetchJson(url: string, options?: UndiciRequestInit): Promise<unknown> {
@@ -771,6 +782,7 @@ function buildModelPricingCatalogFromData(pricingData: PricingData): ModelPricin
   return {
     models,
     groupRatio: pricingData.groupRatio,
+    reportedGroupRatio: pricingData.reportedGroupRatio,
   };
 }
 

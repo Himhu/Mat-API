@@ -470,13 +470,14 @@ function buildStatements(
   for (const row of snapshot.accounts.accountTokens) {
     statements.push({
       table: 'account_tokens',
-      columns: ['id', 'account_id', 'name', 'token', 'token_group', 'value_status', 'source', 'enabled', 'is_default', 'created_at', 'updated_at'],
+      columns: ['id', 'account_id', 'name', 'token', 'token_group', 'token_group_confirmed', 'value_status', 'source', 'enabled', 'is_default', 'created_at', 'updated_at'],
       values: [
         asNumber(row.id, 0),
         asNumber(row.accountId, 0),
         asNullableString(row.name),
         asNullableString(row.token),
         asNullableString(row.tokenGroup),
+        asBoolean(row.tokenGroupConfirmed, false),
         asNullableString((row as { valueStatus?: unknown }).valueStatus) ?? 'ready',
         asNullableString(row.source) ?? 'manual',
         asBoolean(row.enabled, true),
@@ -669,7 +670,7 @@ function buildStatements(
   for (const row of snapshot.accounts.downstreamApiKeys) {
     statements.push({
       table: 'downstream_api_keys',
-      columns: ['id', 'name', 'key', 'description', 'enabled', 'expires_at', 'max_cost', 'used_cost', 'max_requests', 'used_requests', 'supported_models', 'allowed_route_ids', 'site_weight_multipliers', 'excluded_site_ids', 'excluded_credential_refs', 'last_used_at', 'created_at', 'updated_at'],
+      columns: ['id', 'name', 'key', 'description', 'enabled', 'expires_at', 'max_cost', 'used_cost', 'max_requests', 'used_requests', 'supported_models', 'allowed_route_ids', 'allowed_upstream_groups', 'site_weight_multipliers', 'excluded_site_ids', 'excluded_credential_refs', 'last_used_at', 'created_at', 'updated_at'],
       values: [
         asNumber(row.id, 0),
         asNullableString(row.name),
@@ -683,6 +684,7 @@ function buildStatements(
         asNumber(row.usedRequests, 0),
         serializeColumnValue('downstream_api_keys', 'supported_models', row.supportedModels, contract),
         serializeColumnValue('downstream_api_keys', 'allowed_route_ids', row.allowedRouteIds, contract),
+        serializeColumnValue('downstream_api_keys', 'allowed_upstream_groups', row.allowedUpstreamGroups, contract),
         serializeColumnValue('downstream_api_keys', 'site_weight_multipliers', row.siteWeightMultipliers, contract),
         serializeColumnValue('downstream_api_keys', 'excluded_site_ids', row.excludedSiteIds, contract),
         serializeColumnValue('downstream_api_keys', 'excluded_credential_refs', row.excludedCredentialRefs, contract),

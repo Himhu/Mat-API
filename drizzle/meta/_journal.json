@@ -197,6 +197,20 @@
       "when": 1785715200000,
       "tag": "0027_site_max_concurrency",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "6",
+      "when": 1793465599270,
+      "tag": "0028_downstream_upstream_groups",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "6",
+      "when": 1793466084589,
+      "tag": "0029_confirmed_token_groups",
+      "breakpoints": true
     }
   ]
 }

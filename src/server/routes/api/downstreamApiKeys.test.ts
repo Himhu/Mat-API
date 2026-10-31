@@ -918,4 +918,41 @@ describe('downstream api keys routes', () => {
       items: [],
     });
   });
+  it('persists restrictive empty groups and preserves them on unrelated edits', async () => {
+    const res = await app.inject({ method: 'POST', url: '/api/downstream-keys', payload: {name:'groups',key:'sk-group-scope',allowedUpstreamGroups:[]} });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().item.allowedUpstreamGroups).toEqual([]);
+    const edited = await app.inject({ method:'PUT', url:`/api/downstream-keys/${res.json().item.id}`,payload:{name:'renamed'} });
+    expect(edited.statusCode).toBe(200);
+    expect(edited.json().item.allowedUpstreamGroups).toEqual([]);
+    const legacy = await app.inject({method:'POST',url:'/api/downstream-keys',payload:{name:'legacy',key:'sk-legacy-group'}});
+    expect(legacy.json().item.allowedUpstreamGroups).toBeNull();
+  });
+
+  it('preserves an unavailable selected group on edits but rejects new unknown groups', async () => {
+    const site = await db.insert(schema.sites).values({name:'groups',url:'https://groups.example.com',platform:'new-api'}).returning().get();
+    const account = await db.insert(schema.accounts).values({siteId:site.id,accessToken:'session'}).returning().get();
+    const token = await db.insert(schema.accountTokens).values({accountId:account.id,name:'VIP',token:'sk-upstream',tokenGroup:'VIP',tokenGroupConfirmed:true}).returning().get();
+    const scope = [{siteId:site.id,group:'VIP'}];
+    const created = await app.inject({method:'POST',url:'/api/downstream-keys',payload:{name:'scoped',key:'sk-scoped-crud',allowedUpstreamGroups:scope}});
+    expect(created.statusCode).toBe(200);
+    expect(created.json().item.allowedUpstreamGroups).toEqual(scope);
+    const url = `/api/downstream-keys/${created.json().item.id}`;
+    await db.delete(schema.accountTokens).where(eq(schema.accountTokens.id,token.id)).run();
+    for (const payload of [{name:'renamed'}, {name:'renamed again',allowedUpstreamGroups:scope}]) {
+      const updated = await app.inject({method:'PUT',url,payload});
+      expect(updated.statusCode).toBe(200);
+      expect(updated.json().item.allowedUpstreamGroups).toEqual(scope);
+    }
+    const invalid = await app.inject({method:'PUT',url,payload:{allowedUpstreamGroups:[...scope,{siteId:site.id,group:'missing'}]}});
+    expect(invalid.statusCode).toBe(400);
+  });
+
+  it('rejects malformed and nonexistent upstream group references', async () => {
+    for (const allowedUpstreamGroups of ['bad', [{siteId:1,group:''}], [{siteId:99999,group:'VIP'}]]) {
+      const res = await app.inject({method:'POST',url:'/api/downstream-keys',payload:{name:'bad',key:'sk-bad-group',allowedUpstreamGroups}});
+      expect(res.statusCode).toBe(400);
+    }
+  });
+
 });

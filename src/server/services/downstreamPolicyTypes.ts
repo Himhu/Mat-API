@@ -15,7 +15,10 @@ export type DownstreamExcludedCredentialRef =
   | DownstreamAccountTokenCredentialRef
   | DownstreamDefaultApiKeyCredentialRef;
 
+export type DownstreamUpstreamGroup = { siteId: number; group: string };
+
 export interface DownstreamRoutingPolicy {
+  allowedUpstreamGroups?: DownstreamUpstreamGroup[] | null;
   supportedModels: string[];
   allowedRouteIds: number[];
   siteWeightMultipliers: Record<number, number>;

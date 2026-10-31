@@ -1,1 +1,1 @@
-ALTER TABLE "sites" ADD COLUMN "custom_headers_override_request_headers" BOOLEAN DEFAULT false;
+ALTER TABLE "account_tokens" ADD COLUMN "token_group_confirmed" BOOLEAN NOT NULL DEFAULT false;

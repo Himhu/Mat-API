@@ -226,4 +226,14 @@ describe('downstreamApiKeyService', () => {
     const authResult = await service.authorizeDownstreamToken(row.key);
     expect(authResult.ok).toBe(false);
   });
+  it('retains group restrictions during auth and fails closed on corrupt stored data', async () => {
+    for (const [value,expected] of [[null,null], ['[]',[]], ['[{"siteId":12,"group":"VIP"}]',[{siteId:12,group:'VIP'}]], ['broken',[]]] as const) {
+      await db.delete(schema.downstreamApiKeys).run();
+      await db.insert(schema.downstreamApiKeys).values({name:'scope',key:'sk-scope-auth',allowedUpstreamGroups:value,enabled:true}).run();
+      const result=await service.authorizeDownstreamToken('sk-scope-auth');
+      expect(result.ok).toBe(true);
+      if(result.ok) expect(result.policy.allowedUpstreamGroups).toEqual(expected);
+    }
+  });
+
 });

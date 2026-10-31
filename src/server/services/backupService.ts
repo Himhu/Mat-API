@@ -96,6 +96,7 @@ type BackupDownstreamApiKeyRow = Pick<DownstreamApiKeyRow,
   | 'maxCost'
   | 'maxRequests'
   | 'supportedModels'
+  | 'allowedUpstreamGroups'
   | 'allowedRouteIds'
   | 'siteWeightMultipliers'
   | 'excludedSiteIds'
@@ -668,6 +669,7 @@ function pushDefaultImportedToken(
     name: 'default',
     token,
     tokenGroup: 'default',
+    tokenGroupConfirmed: false,
     valueStatus: 'ready',
     source: 'legacy',
     enabled: true,
@@ -1086,6 +1088,7 @@ function buildAccountsSectionFromRefBackup(data: RawBackupData): AccountsBackupS
         name: 'default',
         token: apiToken,
         tokenGroup: 'default',
+        tokenGroupConfirmed: false,
         valueStatus: 'ready',
         source: 'legacy',
         enabled: true,
@@ -1623,6 +1626,7 @@ async function importAccountsSection(section: AccountsBackupSection): Promise<vo
         name: row.name,
         token: row.token,
         tokenGroup: row.tokenGroup ?? null,
+        tokenGroupConfirmed: row.tokenGroupConfirmed ?? false,
         valueStatus: row.valueStatus ?? 'ready',
         source: row.source,
         enabled: row.enabled,
@@ -1788,6 +1792,7 @@ async function importAccountsSection(section: AccountsBackupSection): Promise<vo
           maxRequests: row.maxRequests ?? null,
           usedRequests: runtimeDownstream?.usedRequests ?? row.usedRequests ?? 0,
           supportedModels: row.supportedModels ?? null,
+          allowedUpstreamGroups: row.allowedUpstreamGroups ?? null,
           allowedRouteIds: row.allowedRouteIds ?? null,
           siteWeightMultipliers: row.siteWeightMultipliers ?? null,
           excludedSiteIds: row.excludedSiteIds ?? null,

@@ -193,6 +193,7 @@ export async function ensureDefaultTokenForAccount(
   if (!normalizedToken) return null;
   if (isMaskedTokenValue(normalizedToken)) return null;
   const tokenGroup = normalizeTokenGroup(options?.tokenGroup, options?.name) || 'default';
+  const tokenGroupConfirmed = !!options?.tokenGroup?.trim();
 
   const now = new Date().toISOString();
   const tokens = await db.select()
@@ -208,6 +209,7 @@ export async function ensureDefaultTokenForAccount(
         name: normalizeTokenName(options?.name, tokens.length + 1),
         token: normalizedToken,
         tokenGroup,
+        tokenGroupConfirmed,
         valueStatus: ACCOUNT_TOKEN_VALUE_STATUS_READY,
         source: options?.source || 'manual',
         enabled: options?.enabled ?? true,
@@ -225,7 +227,8 @@ export async function ensureDefaultTokenForAccount(
     await db.update(schema.accountTokens)
       .set({
         name: options?.name ? normalizeTokenName(options.name) : target.name,
-        tokenGroup,
+        tokenGroup: tokenGroupConfirmed ? tokenGroup : target.tokenGroup,
+        tokenGroupConfirmed: tokenGroupConfirmed || target.tokenGroupConfirmed,
         valueStatus: ACCOUNT_TOKEN_VALUE_STATUS_READY,
         source: options?.source || target.source || 'manual',
         enabled: options?.enabled ?? target.enabled,
@@ -312,6 +315,7 @@ export async function syncTokensFromUpstream(accountId: number, upstreamTokens: 
     const tokenName = normalizeTokenName(upstream.name, index);
     const enabled = upstream.enabled ?? true;
     const tokenGroup = normalizeTokenGroup(upstream.tokenGroup, tokenName);
+    const tokenGroupConfirmed = !!upstream.tokenGroup?.trim();
     const nextValueStatus = isMaskedTokenValue(tokenValue)
       ? ACCOUNT_TOKEN_VALUE_STATUS_MASKED_PENDING
       : ACCOUNT_TOKEN_VALUE_STATUS_READY;
@@ -325,6 +329,7 @@ export async function syncTokensFromUpstream(accountId: number, upstreamTokens: 
         .set({
           name: tokenName,
           tokenGroup,
+          tokenGroupConfirmed,
           valueStatus: ACCOUNT_TOKEN_VALUE_STATUS_READY,
           source: 'sync',
           enabled,
@@ -334,6 +339,7 @@ export async function syncTokensFromUpstream(accountId: number, upstreamTokens: 
         .run();
       byToken.name = tokenName;
       byToken.tokenGroup = tokenGroup;
+      byToken.tokenGroupConfirmed = tokenGroupConfirmed;
       byToken.valueStatus = ACCOUNT_TOKEN_VALUE_STATUS_READY;
       byToken.enabled = enabled;
       byToken.source = 'sync';
@@ -366,6 +372,7 @@ export async function syncTokensFromUpstream(accountId: number, upstreamTokens: 
         .set({
           name: tokenName,
           tokenGroup,
+          tokenGroupConfirmed,
           valueStatus: ACCOUNT_TOKEN_VALUE_STATUS_READY,
           source: 'sync',
           enabled,
@@ -375,6 +382,7 @@ export async function syncTokensFromUpstream(accountId: number, upstreamTokens: 
         .run();
       readyMaskedMatch.name = tokenName;
       readyMaskedMatch.tokenGroup = tokenGroup;
+      readyMaskedMatch.tokenGroupConfirmed = tokenGroupConfirmed;
       readyMaskedMatch.valueStatus = ACCOUNT_TOKEN_VALUE_STATUS_READY;
       readyMaskedMatch.enabled = enabled;
       readyMaskedMatch.source = 'sync';
@@ -411,6 +419,7 @@ export async function syncTokensFromUpstream(accountId: number, upstreamTokens: 
           name: tokenName,
           token: tokenValue,
           tokenGroup,
+          tokenGroupConfirmed,
           valueStatus: nextValueStatus,
           source: 'sync',
           enabled: nextEnabled,
@@ -422,6 +431,7 @@ export async function syncTokensFromUpstream(accountId: number, upstreamTokens: 
       matchingPlaceholder.name = tokenName;
       matchingPlaceholder.token = tokenValue;
       matchingPlaceholder.tokenGroup = tokenGroup;
+      matchingPlaceholder.tokenGroupConfirmed = tokenGroupConfirmed;
       matchingPlaceholder.valueStatus = nextValueStatus;
       matchingPlaceholder.source = 'sync';
       matchingPlaceholder.enabled = nextEnabled;
@@ -441,6 +451,7 @@ export async function syncTokensFromUpstream(accountId: number, upstreamTokens: 
         name: tokenName,
         token: tokenValue,
         tokenGroup,
+        tokenGroupConfirmed,
         valueStatus: nextValueStatus,
         source: 'sync',
         enabled: nextValueStatus === ACCOUNT_TOKEN_VALUE_STATUS_READY ? enabled : false,

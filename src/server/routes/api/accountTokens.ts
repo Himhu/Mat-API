@@ -313,7 +313,7 @@ async function executeAccountTokenSync(row: AccountWithSiteRow): Promise<SyncExe
         `token sync timeout (${Math.round(TOKEN_SYNC_TIMEOUT_MS / 1000)}s)`,
       );
       if (fallback) {
-        tokens = [{ name: 'default', key: fallback, enabled: true, tokenGroup: 'default' }];
+        tokens = [{ name: 'default', key: fallback, enabled: true, tokenGroup: undefined }];
       }
     }
 
@@ -520,6 +520,7 @@ export async function accountTokensRoutes(app: FastifyInstance) {
           name: (body.name || '').trim() || (existing.length === 0 ? 'default' : `token-${existing.length + 1}`),
           token: tokenValue,
           tokenGroup: (body.group || '').trim() || null,
+          tokenGroupConfirmed: !!body.group?.trim(),
           valueStatus,
           source: body.source || 'manual',
           enabled,
@@ -800,6 +801,7 @@ export async function accountTokensRoutes(app: FastifyInstance) {
         return reply.code(400).send({ success: false, message: '令牌不能为空' });
       }
       updates.token = tokenValue;
+      if (tokenValue !== existing.token) updates.tokenGroupConfirmed = false;
       nextValueStatus = isMaskedTokenValue(tokenValue)
         ? ACCOUNT_TOKEN_VALUE_STATUS_MASKED_PENDING
         : ACCOUNT_TOKEN_VALUE_STATUS_READY;
@@ -808,6 +810,7 @@ export async function accountTokensRoutes(app: FastifyInstance) {
 
     if (body.group !== undefined) {
       updates.tokenGroup = (body.group || '').trim() || null;
+      updates.tokenGroupConfirmed = !!body.group?.trim();
     }
 
     if (nextValueStatus === ACCOUNT_TOKEN_VALUE_STATUS_MASKED_PENDING) {

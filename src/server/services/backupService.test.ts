@@ -103,6 +103,8 @@ describe('backupService', () => {
       accountId: account.id,
       name: 'default',
       token: 'sk-roundtrip-token',
+      tokenGroup: 'VIP',
+      tokenGroupConfirmed: true,
       source: 'manual',
       enabled: true,
       isDefault: true,
@@ -195,7 +197,8 @@ describe('backupService', () => {
     ]).run();
 
     await db.insert(schema.downstreamApiKeys).values({
-      name: 'Shared Downstream',
+      allowedUpstreamGroups: JSON.stringify([{siteId:site.id,group:'VIP'}]),
+        name: 'Shared Downstream',
       key: 'downstream-roundtrip-key',
       description: 'shared quota',
       groupName: 'team-a',
@@ -237,6 +240,7 @@ describe('backupService', () => {
     ]);
     expect(exported.accounts.downstreamApiKeys).toEqual([
       expect.objectContaining({
+        allowedUpstreamGroups: JSON.stringify([{siteId:site.id,group:'VIP'}]),
         name: 'Shared Downstream',
         key: 'downstream-roundtrip-key',
         description: 'shared quota',
@@ -286,6 +290,9 @@ describe('backupService', () => {
     expect(restoredSite?.isPinned).toBe(true);
     expect(restoredSite?.sortOrder).toBe(9);
 
+    const restoredToken = await db.select().from(schema.accountTokens).where(eq(schema.accountTokens.id, accountToken.id)).get();
+    expect(restoredToken).toMatchObject({tokenGroup:'VIP',tokenGroupConfirmed:true});
+
     expect(restoredAccount?.isPinned).toBe(true);
     expect(restoredAccount?.sortOrder).toBe(7);
     expect(restoredAccount?.oauthProvider).toBe('codex');
@@ -309,6 +316,7 @@ describe('backupService', () => {
     expect(restoredModelAvailability.some((row) => row.modelName === 'gpt-discovered' && !row.isManual)).toBe(true);
     expect(restoredDownstreamKeys).toEqual([
       expect.objectContaining({
+        allowedUpstreamGroups: JSON.stringify([{siteId:site.id,group:'VIP'}]),
         name: 'Shared Downstream',
         key: 'downstream-roundtrip-key',
         description: 'shared quota',

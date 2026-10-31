@@ -7,6 +7,7 @@ import { installAccountsSnapshotCompat } from './testApiCompat.js';
 
 const { apiMock } = vi.hoisted(() => ({
   apiMock: {
+    getDownstreamUpstreamGroups: vi.fn(),
     getDownstreamApiKeysSummary: vi.fn(),
     getDownstreamApiKeys: vi.fn(),
     getRoutesLite: vi.fn(),
@@ -129,6 +130,7 @@ function buildRawItem(overrides?: Partial<any>) {
 beforeEach(() => {
   vi.clearAllMocks();
   installAccountsSnapshotCompat(apiMock);
+  apiMock.getDownstreamUpstreamGroups.mockResolvedValue({items:[{siteId:201,siteName:'站点A',group:'VIP',ratios:[0.8],hasUnknownRatio:false,credentialCount:1,models:[]}],unknownCredentialCount:0});
   (globalThis as any).document = {
     body: { style: {} },
     addEventListener: vi.fn(),
@@ -239,7 +241,7 @@ describe('DownstreamKeys page', () => {
       expect(text).toContain('sk-s****0315');
       expect(text).toContain('默认群组');
       expect(text).toContain('4.2K');
-      expect(text).toContain('主分组');
+      expect(text).toContain('密钥分类');
       expect(text).toContain('移动端');
     } finally {
       root?.unmount();
@@ -275,7 +277,7 @@ describe('DownstreamKeys page', () => {
       });
       await flushMicrotasks();
 
-      const input = root!.root.findAllByType('input').find((node) => node.props.placeholder === '搜索名称、备注、模型、主分组或标签');
+      const input = root!.root.findAllByType('input').find((node) => node.props.placeholder === '搜索名称、备注、模型、密钥分类或标签');
       await act(async () => {
         input!.props.onChange({ target: { value: 'batch' } });
       });
@@ -316,7 +318,7 @@ describe('DownstreamKeys page', () => {
       await flushMicrotasks();
 
       expect(collectText(root!.root)).toContain('高级配置');
-      expect(collectText(root!.root)).not.toContain('站点倍率 JSON');
+      expect(collectText(root!.root)).not.toContain('站点路由权重 JSON');
 
       const inputs = root!.root.findAllByType('input');
       const tagInput = inputs.find((node) => node.props.placeholder === '输入标签后按回车或逗号，例如：移动端、VIP、项目A');
@@ -329,6 +331,10 @@ describe('DownstreamKeys page', () => {
       });
       await flushMicrotasks();
 
+      const emptySave = root!.root.findAll((node) => node.type === 'button' && collectText(node).includes('创建密钥'))[0];
+      await act(async () => emptySave.props.onClick());
+      expect(apiMock.createDownstreamApiKey).not.toHaveBeenCalled();
+      await act(async () => root!.root.findByProps({'aria-label':'选择 站点A / VIP'}).props.onChange({target:{checked:true}}));
       const saveBtn = root!.root.findAll((node) => node.type === 'button' && collectText(node).includes('创建密钥'))[0];
       await act(async () => {
         saveBtn.props.onClick();
@@ -338,6 +344,7 @@ describe('DownstreamKeys page', () => {
       expect(apiMock.createDownstreamApiKey).toHaveBeenCalledWith(expect.objectContaining({
         name: 'new-key',
         key: 'sk-new-key-0315',
+        allowedUpstreamGroups: [{siteId:201,group:'VIP'}],
         siteWeightMultipliers: {},
       }));
 
@@ -601,6 +608,7 @@ describe('DownstreamKeys page', () => {
       });
       await flushMicrotasks();
 
+      await act(async () => root!.root.findByProps({'aria-label':'选择 站点A / VIP'}).props.onChange({target:{checked:true}}));
       const saveBtn = root!.root.findAll((node) => node.type === 'button' && collectText(node).includes('创建密钥'))[0];
       await act(async () => {
         saveBtn.props.onClick();
@@ -668,6 +676,7 @@ describe('DownstreamKeys page', () => {
       });
       await flushMicrotasks();
 
+      await act(async () => root!.root.findByProps({'aria-label':'选择 站点A / VIP'}).props.onChange({target:{checked:true}}));
       const saveBtn = root!.root.findAll((node) => node.type === 'button' && collectText(node).includes('创建密钥'))[0];
       await act(async () => {
         saveBtn.props.onClick();
@@ -764,6 +773,7 @@ describe('DownstreamKeys page', () => {
       });
       await flushMicrotasks();
 
+      await act(async () => root!.root.findByProps({'aria-label':'选择 站点A / VIP'}).props.onChange({target:{checked:true}}));
       const saveBtn = root!.root.findAll((node) => node.type === 'button' && collectText(node).includes('创建密钥'))[0];
       await act(async () => {
         saveBtn.props.onClick();
@@ -787,7 +797,7 @@ describe('DownstreamKeys page', () => {
       });
       await flushMicrotasks();
 
-      const groupModeSelect = root!.root.findAllByType('select').find((node) => Array.isArray(node.props.children) && collectText(node).includes('统一设为主分组'));
+      const groupModeSelect = root!.root.findAllByType('select').find((node) => Array.isArray(node.props.children) && collectText(node).includes('统一设为密钥分类'));
       const tagModeSelect = root!.root.findAllByType('select').find((node) => Array.isArray(node.props.children) && collectText(node).includes('追加标签'));
       await act(async () => {
         groupModeSelect!.props.onChange({ target: { value: 'set' } });
@@ -887,6 +897,7 @@ describe('DownstreamKeys page', () => {
       });
       await flushMicrotasks();
 
+      await act(async () => root!.root.findByProps({'aria-label':'选择 站点A / VIP'}).props.onChange({target:{checked:true}}));
       const saveBtn = root!.root.findAll((node) => node.type === 'button' && collectText(node).includes('创建密钥'))[0];
       await act(async () => {
         saveBtn.props.onClick();

@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -562,4 +563,36 @@ describe('TokenRouter downstream policy', () => {
     expect(blockedCandidate?.eligible).toBe(false);
     expect(blockedCandidate?.reason).toContain('API Key/令牌已被下游密钥排除');
   });
+  it('enforces exact site/group scope for selection, preferred channels and failover', async () => {
+    const route = await db.insert(schema.tokenRoutes).values({ modelPattern: 'group-test', enabled: true }).returning().get();
+    const channels: any[] = [];
+    const sites: any[] = [];
+    for (const index of [0, 1]) {
+      const site = await db.insert(schema.sites).values({ name: `group-site-${index}`, url: `https://group-${index}.example.com`, platform: 'new-api', status: 'active' }).returning().get();
+      sites.push(site);
+      const account = await db.insert(schema.accounts).values({ siteId: site.id, accessToken: 'session', apiToken: 'fallback', status: 'active', balance: 100 }).returning().get();
+      for (const group of ['VIP', 'default', null]) {
+        const token = await db.insert(schema.accountTokens).values({ accountId: account.id, name: group || 'unknown', token: `secret-${index}-${group}`, tokenGroup: group, tokenGroupConfirmed: !!group, enabled: true }).returning().get();
+        channels.push(await db.insert(schema.routeChannels).values({ routeId: route.id, accountId: account.id, tokenId: token.id, enabled: true, priority: 0, weight: 10 }).returning().get());
+      }
+      channels.push(await db.insert(schema.routeChannels).values({ routeId: route.id, accountId: account.id, tokenId: null, enabled: true }).returning().get());
+    }
+    const policy = { supportedModels: [], allowedRouteIds: [route.id], siteWeightMultipliers: {}, excludedSiteIds: [], excludedCredentialRefs: [], allowedUpstreamGroups: [{ siteId: sites[0].id, group: 'VIP' }] };
+    const router = new TokenRouter();
+    expect((await router.selectChannel('group-test', policy))?.channel.id).toBe(channels[0].id);
+    expect(await router.selectNextChannel('group-test', [channels[0].id], policy)).toBeNull();
+    expect(await router.selectPreferredChannel('group-test', channels[4].id, policy)).toBeNull();
+    expect(await router.selectChannel('group-test', { ...policy, allowedUpstreamGroups: [] })).toBeNull();
+    expect(await router.selectChannel('group-test', { ...policy, allowedUpstreamGroups: [{siteId: sites[0].id, group: 'vip'}] })).toBeNull();
+    const multiple = { ...policy, allowedUpstreamGroups: [...policy.allowedUpstreamGroups, {siteId: sites[1].id, group: 'VIP'}] };
+    expect((await router.selectNextChannel('group-test', [channels[0].id], multiple))?.channel.id).toBe(channels[4].id);
+    expect(await router.selectChannel('group-test', { ...policy, allowedUpstreamGroups: null })).not.toBeNull();
+    const explanation = await router.explainSelection('group-test', [], policy);
+    expect(explanation.candidates.filter(c=>c.eligible).map(c=>c.channelId)).toEqual([channels[0].id]);
+    await db.update(schema.accountTokens).set({tokenGroup:'other'}).where(eq(schema.accountTokens.id,channels[0].tokenId)).run();
+    invalidateTokenRouterCache();
+    expect(await router.selectChannel('group-test',policy)).toBeNull();
+
+  });
+
 });

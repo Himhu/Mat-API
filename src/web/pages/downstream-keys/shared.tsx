@@ -3,6 +3,7 @@ import React from 'react';
 export type Range = '24h' | '7d' | 'all';
 
 export type SummaryItem = {
+  allowedUpstreamGroups?: Array<{siteId:number;group:string}> | null;
   id: number;
   name: string;
   keyMasked: string;

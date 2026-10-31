@@ -6,6 +6,7 @@ import {
   EMPTY_DOWNSTREAM_ROUTING_POLICY,
   type DownstreamExcludedCredentialRef,
   type DownstreamRoutingPolicy,
+  type DownstreamUpstreamGroup,
 } from './downstreamPolicyTypes.js';
 
 export type DownstreamApiKeyRow = typeof schema.downstreamApiKeys.$inferSelect;
@@ -25,6 +26,7 @@ export type DownstreamApiKeyPolicyView = {
   maxRequests: number | null;
   usedRequests: number;
   supportedModels: string[];
+  allowedUpstreamGroups?: DownstreamUpstreamGroup[] | null;
   allowedRouteIds: number[];
   siteWeightMultipliers: Record<number, number>;
   excludedSiteIds: number[];
@@ -341,6 +343,26 @@ export async function isModelAllowedByPolicyOrAllowedRoutes(model: string, polic
   return await isModelMatchedByAllowedRoutes(model, allowedRouteIds);
 }
 
+export function normalizeAllowedUpstreamGroups(input: unknown): DownstreamUpstreamGroup[] | null {
+  if (input == null) return null;
+  const rows = typeof input === 'string' ? JSON.parse(input) : input;
+  if (!Array.isArray(rows)) throw new Error('上游分组必须是数组或 null');
+  const unique = new Map<string, DownstreamUpstreamGroup>();
+  for (const row of rows) {
+    if (!row || !Number.isSafeInteger(row.siteId) || row.siteId <= 0 || typeof row.group !== 'string' || !row.group.trim()) {
+      throw new Error('上游分组需要有效的站点 ID 和分组名称');
+    }
+    const entry = {siteId: row.siteId, group: row.group.trim()};
+    unique.set(JSON.stringify(entry), entry);
+  }
+  return [...unique.values()];
+}
+
+// Corrupt persisted restrictions must never become unrestricted access.
+function readAllowedUpstreamGroups(input: unknown): DownstreamUpstreamGroup[] | null {
+  try { return normalizeAllowedUpstreamGroups(input); } catch { return []; }
+}
+
 export function toDownstreamApiKeyPolicyView(row: DownstreamApiKeyRow): DownstreamApiKeyPolicyView {
   const supportedModels = normalizeSupportedModelsInput(parseJson(row.supportedModels));
   const allowedRouteIds = normalizeAllowedRouteIdsInput(parseJson(row.allowedRouteIds));
@@ -364,6 +386,7 @@ export function toDownstreamApiKeyPolicyView(row: DownstreamApiKeyRow): Downstre
     usedRequests: Number(row.usedRequests || 0),
     supportedModels,
     allowedRouteIds,
+    allowedUpstreamGroups: readAllowedUpstreamGroups(row.allowedUpstreamGroups),
     siteWeightMultipliers,
     excludedSiteIds,
     excludedCredentialRefs,
@@ -373,8 +396,9 @@ export function toDownstreamApiKeyPolicyView(row: DownstreamApiKeyRow): Downstre
   };
 }
 
-export function toPolicyFromView(view: Pick<DownstreamApiKeyPolicyView, 'supportedModels' | 'allowedRouteIds' | 'siteWeightMultipliers' | 'excludedSiteIds' | 'excludedCredentialRefs'>): DownstreamRoutingPolicy {
+export function toPolicyFromView(view: Pick<DownstreamApiKeyPolicyView, 'allowedUpstreamGroups' | 'supportedModels' | 'allowedRouteIds' | 'siteWeightMultipliers' | 'excludedSiteIds' | 'excludedCredentialRefs'>): DownstreamRoutingPolicy {
   return {
+    allowedUpstreamGroups: readAllowedUpstreamGroups(view.allowedUpstreamGroups),
     supportedModels: normalizeSupportedModelsInput(view.supportedModels),
     allowedRouteIds: normalizeAllowedRouteIdsInput(view.allowedRouteIds),
     siteWeightMultipliers: normalizeSiteWeightMultipliersInput(view.siteWeightMultipliers),
@@ -527,6 +551,7 @@ export function normalizeDownstreamApiKeyPayload(input: {
   maxCost?: unknown;
   maxRequests?: unknown;
   supportedModels?: unknown;
+  allowedUpstreamGroups?: unknown;
   allowedRouteIds?: unknown;
   siteWeightMultipliers?: unknown;
   excludedSiteIds?: unknown;
@@ -564,6 +589,7 @@ export function normalizeDownstreamApiKeyPayload(input: {
   return {
     name,
     key,
+    allowedUpstreamGroups: normalizeAllowedUpstreamGroups(input.allowedUpstreamGroups),
     description: description || null,
     groupName,
     tags,

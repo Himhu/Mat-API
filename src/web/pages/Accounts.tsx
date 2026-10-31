@@ -2631,9 +2631,9 @@ export default function Accounts() {
                     setEditForm((prev) => ({ ...prev, status: value }))
                   }
                   options={[
-                    { value: "active", label: "active" },
-                    { value: "disabled", label: "disabled" },
-                    { value: "expired", label: "expired" },
+                    { value: "active", label: "正常" },
+                    { value: "disabled", label: "已禁用" },
+                    { value: "expired", label: "已过期" },
                   ]}
                   placeholder="状态"
                 />

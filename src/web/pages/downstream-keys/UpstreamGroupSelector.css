@@ -102,3 +102,28 @@
   .upstream-group-option { gap: 8px; padding-inline: 8px; }
   .upstream-group-ratio { max-width: 76px; }
 }
+
+.upstream-group-site-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.upstream-group-site-filter > span { flex-shrink: 0; }
+.upstream-group-site-filter select {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  text-overflow: ellipsis;
+}
+.upstream-group-site-filter select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

@@ -23,6 +23,7 @@ export default function UpstreamGroupSelector({ value, onChange, allowUnrestrict
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
   const [search, setSearch] = useState('');
+  const [siteFilter, setSiteFilter] = useState('all');
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -61,13 +62,23 @@ export default function UpstreamGroupSelector({ value, onChange, allowUnrestrict
 
   const selected = new Set((value || []).map(groupKey));
   const missing = (value || []).filter(row => !items.some(item => groupKey(item) === groupKey(row)));
-  const visible = items.filter(row => `${row.siteName} ${row.group}`.toLowerCase().includes(search.trim().toLowerCase()));
+  const siteOptions = new Map<number, string>();
+  for (const row of items) siteOptions.set(row.siteId, row.siteName);
+  for (const row of value || []) {
+    if (!siteOptions.has(row.siteId)) siteOptions.set(row.siteId, `站点 #${row.siteId}（当前不可用）`);
+  }
+  // A refreshed catalogue can remove a site; fall back to viewing all without changing authorization.
+  const activeSite = siteFilter === 'all' || siteOptions.has(Number(siteFilter)) ? siteFilter : 'all';
+  const matchesSite = (row: UpstreamGroupRef) => activeSite === 'all' || String(row.siteId) === activeSite;
+  const visible = items.filter(row => matchesSite(row) && `${row.siteName} ${row.group}`.toLowerCase().includes(search.trim().toLowerCase()));
+  const visibleMissing = missing.filter(matchesSite);
+  const visibleSelected = (value || []).filter(matchesSite);
   const sites = new Map<number, { name: string; groups: UpstreamGroupOption[] }>();
   for (const row of visible) {
     if (!sites.has(row.siteId)) sites.set(row.siteId, { name: row.siteName, groups: [] });
     sites.get(row.siteId)!.groups.push(row);
   }
-  const first = value?.[0];
+  const first = visibleSelected[0];
   const firstOption = first && items.find(item => groupKey(item) === groupKey(first));
   const summary = first ? `${firstOption?.siteName || `站点 #${first.siteId}`} / ${first.group}` : '请选择上游分组，可多选';
   const toggle = (row: UpstreamGroupRef, checked: boolean) => onChange(checked
@@ -93,6 +104,20 @@ export default function UpstreamGroupSelector({ value, onChange, allowUnrestrict
       {value === null ? (
         <div className="upstream-group-note">沿用原有范围，不限制上游分组。开启「限定分组」后可选择。</div>
       ) : (
+        <>
+        <label className="upstream-group-site-filter">
+          <span className="downstream-key-modal-label">站点</span>
+          <select aria-label="按站点筛选上游分组" value={activeSite} onChange={event => {
+            setSiteFilter(event.target.value);
+            setSearch('');
+            setOpen(false);
+          }}>
+            <option value="all">全部站点（{siteOptions.size}）</option>
+            {[...siteOptions].map(([siteId, name]) => (
+              <option key={siteId} value={String(siteId)}>{name}{[...siteOptions.values()].filter(candidate => candidate === name).length > 1 ? ` · #${siteId}` : ''}</option>
+            ))}
+          </select>
+        </label>
         <div ref={rootRef} className="upstream-group-dropdown" onKeyDown={event => {
           if (event.key === 'Escape' && open) { event.preventDefault(); event.stopPropagation(); close(); }
         }}>
@@ -100,7 +125,7 @@ export default function UpstreamGroupSelector({ value, onChange, allowUnrestrict
             aria-label="选择上游分组" aria-expanded={open} aria-controls={panelId}
             onClick={() => { setSearch(''); setOpen(previous => !previous); }}>
             <span className={`upstream-group-summary ${first ? '' : 'is-placeholder'}`}>{summary}</span>
-            {value.length > 0 && <span className="upstream-group-count">已选 {value.length}</span>}
+            {visibleSelected.length > 0 && <span className="upstream-group-count">已选 {visibleSelected.length}</span>}
             <span className="upstream-group-chevron" aria-hidden="true" />
           </button>
           {open && (
@@ -135,9 +160,9 @@ export default function UpstreamGroupSelector({ value, onChange, allowUnrestrict
                 {!loading && !visible.length && <div className="upstream-group-empty">
                   {error ? '列表加载失败，请刷新重试。' : search.trim() ? '没有匹配的分组，请尝试其他关键词。' : '暂无可选分组，请先在连接管理中同步上游令牌及分组。'}
                 </div>}
-                {missing.length > 0 && <div className="upstream-group-missing">
+                {visibleMissing.length > 0 && <div className="upstream-group-missing">
                   <div className="upstream-group-meta">已选分组 · {loading ? '核对中' : error ? '暂无法核对' : '当前不可用'}</div>
-                  {missing.map(row => <div key={groupKey(row)} className="upstream-group-missing-row">
+                  {visibleMissing.map(row => <div key={groupKey(row)} className="upstream-group-missing-row">
                     <span>站点 #{row.siteId} / {row.group}</span>
                     <button type="button" className="btn btn-ghost btn-sm" aria-label={`移除 站点 #${row.siteId} / ${row.group}`}
                       onClick={() => toggle(row, false)}>移除</button>
@@ -145,14 +170,17 @@ export default function UpstreamGroupSelector({ value, onChange, allowUnrestrict
                 </div>}
               </div>
               <div className="upstream-group-panel-footer">
-                <span aria-live="polite">已选 {value.length} 个分组</span>
+                <span aria-live="polite">共选 {value.length} 个分组{activeSite !== 'all' ? ` · 本站 ${visibleSelected.length} 个` : ''}</span>
                 <button type="button" className="btn btn-primary btn-sm" onClick={close}>完成选择</button>
               </div>
             </div>
           )}
         </div>
+        </>
       )}
-      {value !== null && <div className="upstream-group-note">请求与故障切换仅限所选分组。</div>}
+      {value !== null && <div className="upstream-group-note" aria-live="polite">
+        {value.length > 0 ? `共选 ${value.length} 个分组，来自 ${new Set(value.map(row => row.siteId)).size} 个站点。` : '可切换站点选择多个分组。'}切换站点保留已选项。
+      </div>}
       {value !== null && !loading && !error && missing.length > 0 && <div className="upstream-group-warning">{missing.length} 个已选分组当前不可用，请展开查看。</div>}
       {error && <div className="upstream-group-error" role="alert">分组信息加载失败，请展开后刷新重试。</div>}
       <details className="upstream-group-details">

@@ -48,4 +48,29 @@ describe('upstream group selector', () => {
     await act(async()=>root!.unmount());
   });
 
+  it('filters by site ID and preserves selections across sites, searches and missing groups', async () => {
+    load.mockResolvedValue({items:[1,2].map(siteId=>({siteId,siteName:'同名站点',group:'VIP',ratios:[1],hasUnknownRatio:false,credentialCount:1,models:[]})),unknownCredentialCount:0});
+    const onChange=vi.fn(); let root:ReturnType<typeof create>;
+    const value=[{siteId:1,group:'VIP'},{siteId:99,group:'old'}];
+    await act(async()=>{root=create(<UpstreamGroupSelector value={value} onChange={onChange} allowUnrestricted={false}/>);});
+    const filter=()=>root!.root.findByProps({'aria-label':'按站点筛选上游分组'});
+    await act(async()=>filter().props.onChange({target:{value:'2'}}));
+    expect(onChange).not.toHaveBeenCalled();
+    await act(async()=>root!.root.findByProps({'aria-label':'选择上游分组'}).props.onClick());
+    const choices=root!.root.findAllByType('input').filter(n=>n.props.type==='checkbox');
+    expect(choices).toHaveLength(1);
+    expect(choices[0].props.checked).toBe(false);
+    await act(async()=>choices[0].props.onChange({target:{checked:true}}));
+    expect(onChange).toHaveBeenLastCalledWith([...value,{siteId:2,group:'VIP'}]);
+    await act(async()=>root!.root.findByProps({'aria-label':'搜索上游分组'}).props.onChange({target:{value:'missing'}}));
+    await act(async()=>filter().props.onChange({target:{value:'1'}}));
+    await act(async()=>root!.root.findByProps({'aria-label':'选择上游分组'}).props.onClick());
+    expect(root!.root.findByProps({'aria-label':'搜索上游分组'}).props.value).toBe('');
+    expect(root!.root.findByProps({'aria-label':'选择 同名站点 / VIP'}).props.checked).toBe(true);
+    await act(async()=>filter().props.onChange({target:{value:'99'}}));
+    await act(async()=>root!.root.findByProps({'aria-label':'选择上游分组'}).props.onClick());
+    expect(root!.root.findByProps({'aria-label':'移除 站点 #99 / old'})).toBeTruthy();
+    await act(async()=>root!.unmount());
+  });
+
 });

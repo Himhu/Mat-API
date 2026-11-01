@@ -922,4 +922,28 @@ describe('DownstreamKeys page', () => {
       root?.unmount();
     }
   });
+  it('creates a Codex-scoped key with only matching upstream groups', async () => {
+    apiMock.getDownstreamUpstreamGroups.mockResolvedValue({items:[
+      {siteId:201,siteName:'站点A',group:'GPT',ratios:[],hasUnknownRatio:true,credentialCount:1,models:['gpt-6.1-sol']},
+      {siteId:201,siteName:'站点A',group:'Claude',ratios:[],hasUnknownRatio:true,credentialCount:1,models:['claude-opus-4-6']},
+    ],unknownCredentialCount:0});
+    let root!: WebTestRenderer;
+    try {
+      await act(async()=>{root=create(<MemoryRouter><ToastProvider><DownstreamKeys/></ToastProvider></MemoryRouter>);});
+      await flushMicrotasks();
+      await act(async()=>root.root.findAll(n=>n.type==='button' && collectText(n).includes('新增下游密钥'))[0].props.onClick());
+      await flushMicrotasks();
+      await act(async()=>root.root.findByProps({'aria-label':'模型用途'}).props.onChange({target:{value:'codex'}}));
+      await act(async()=>root.root.findByProps({'aria-label':'选择上游分组'}).props.onClick());
+      expect(root.root.findAllByProps({'aria-label':'选择 站点A / Claude'})).toHaveLength(0);
+      await act(async()=>root.root.findByProps({'aria-label':'选择 站点A / GPT'}).props.onChange({target:{checked:true}}));
+      await act(async()=>{
+        root.root.findByProps({placeholder:'例如：项目 A / 移动端'}).props.onChange({target:{value:'codex-only'}});
+        root.root.findByProps({placeholder:'sk-...'}).props.onChange({target:{value:'sk-codex-only'}});
+      });
+      await act(async()=>root.root.findAll(n=>n.type==='button' && collectText(n)==='创建密钥')[0].props.onClick());
+      expect(apiMock.createDownstreamApiKey).toHaveBeenCalledWith(expect.objectContaining({modelScope:'codex',allowedUpstreamGroups:[{siteId:201,group:'GPT'}],supportedModels:[],allowedRouteIds:[]}));
+    } finally {root?.unmount();}
+  });
+
 });

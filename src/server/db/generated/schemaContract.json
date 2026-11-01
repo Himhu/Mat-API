@@ -543,6 +543,12 @@
           "notNull": false,
           "defaultValue": null,
           "primaryKey": false
+        },
+        "model_scope": {
+          "logicalType": "text",
+          "notNull": true,
+          "defaultValue": "'all'",
+          "primaryKey": false
         }
       }
     },

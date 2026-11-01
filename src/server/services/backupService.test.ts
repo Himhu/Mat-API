@@ -197,8 +197,9 @@ describe('backupService', () => {
     ]).run();
 
     await db.insert(schema.downstreamApiKeys).values({
+      modelScope: 'codex',
       allowedUpstreamGroups: JSON.stringify([{siteId:site.id,group:'VIP'}]),
-        name: 'Shared Downstream',
+      name: 'Shared Downstream',
       key: 'downstream-roundtrip-key',
       description: 'shared quota',
       groupName: 'team-a',
@@ -240,6 +241,7 @@ describe('backupService', () => {
     ]);
     expect(exported.accounts.downstreamApiKeys).toEqual([
       expect.objectContaining({
+        modelScope: 'codex',
         allowedUpstreamGroups: JSON.stringify([{siteId:site.id,group:'VIP'}]),
         name: 'Shared Downstream',
         key: 'downstream-roundtrip-key',
@@ -316,6 +318,7 @@ describe('backupService', () => {
     expect(restoredModelAvailability.some((row) => row.modelName === 'gpt-discovered' && !row.isManual)).toBe(true);
     expect(restoredDownstreamKeys).toEqual([
       expect.objectContaining({
+        modelScope: 'codex',
         allowedUpstreamGroups: JSON.stringify([{siteId:site.id,group:'VIP'}]),
         name: 'Shared Downstream',
         key: 'downstream-roundtrip-key',

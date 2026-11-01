@@ -1,3 +1,4 @@
+import { isModelAllowedForScope } from '../../shared/downstreamModelScope.js';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { minimatch } from 'minimatch';
 import { db, schema } from '../db/index.js';
@@ -26,6 +27,7 @@ export type DownstreamApiKeyPolicyView = {
   maxRequests: number | null;
   usedRequests: number;
   supportedModels: string[];
+  modelScope?: string;
   allowedUpstreamGroups?: DownstreamUpstreamGroup[] | null;
   allowedRouteIds: number[];
   siteWeightMultipliers: Record<number, number>;
@@ -299,6 +301,7 @@ export function matchesDownstreamModelPattern(model: string, pattern: string): b
 }
 
 export function isModelAllowedByPolicy(model: string, policy: DownstreamRoutingPolicy): boolean {
+  if (!isModelAllowedForScope(model, policy.modelScope)) return false;
   const patterns = Array.isArray(policy.supportedModels)
     ? policy.supportedModels
     : [];
@@ -327,6 +330,7 @@ async function isModelMatchedByAllowedRoutes(model: string, allowedRouteIds: num
 }
 
 export async function isModelAllowedByPolicyOrAllowedRoutes(model: string, policy: DownstreamRoutingPolicy): Promise<boolean> {
+  if (!isModelAllowedForScope(model, policy.modelScope)) return false;
   const patterns = normalizeSupportedModelsInput(policy.supportedModels);
   const allowedRouteIds = normalizeAllowedRouteIdsInput(policy.allowedRouteIds);
   const hasPatternRules = patterns.length > 0;
@@ -386,6 +390,7 @@ export function toDownstreamApiKeyPolicyView(row: DownstreamApiKeyRow): Downstre
     usedRequests: Number(row.usedRequests || 0),
     supportedModels,
     allowedRouteIds,
+    modelScope: row.modelScope ?? 'all',
     allowedUpstreamGroups: readAllowedUpstreamGroups(row.allowedUpstreamGroups),
     siteWeightMultipliers,
     excludedSiteIds,
@@ -396,8 +401,9 @@ export function toDownstreamApiKeyPolicyView(row: DownstreamApiKeyRow): Downstre
   };
 }
 
-export function toPolicyFromView(view: Pick<DownstreamApiKeyPolicyView, 'allowedUpstreamGroups' | 'supportedModels' | 'allowedRouteIds' | 'siteWeightMultipliers' | 'excludedSiteIds' | 'excludedCredentialRefs'>): DownstreamRoutingPolicy {
+export function toPolicyFromView(view: Pick<DownstreamApiKeyPolicyView, 'modelScope' | 'allowedUpstreamGroups' | 'supportedModels' | 'allowedRouteIds' | 'siteWeightMultipliers' | 'excludedSiteIds' | 'excludedCredentialRefs'>): DownstreamRoutingPolicy {
   return {
+    modelScope: view.modelScope ?? 'all',
     allowedUpstreamGroups: readAllowedUpstreamGroups(view.allowedUpstreamGroups),
     supportedModels: normalizeSupportedModelsInput(view.supportedModels),
     allowedRouteIds: normalizeAllowedRouteIdsInput(view.allowedRouteIds),
@@ -551,12 +557,15 @@ export function normalizeDownstreamApiKeyPayload(input: {
   maxCost?: unknown;
   maxRequests?: unknown;
   supportedModels?: unknown;
+  modelScope?: unknown;
   allowedUpstreamGroups?: unknown;
   allowedRouteIds?: unknown;
   siteWeightMultipliers?: unknown;
   excludedSiteIds?: unknown;
   excludedCredentialRefs?: unknown;
 }) {
+  const modelScope = input.modelScope === undefined ? 'all' : input.modelScope;
+  if (modelScope !== 'all' && modelScope !== 'codex') throw new Error('模型用途必须为 all 或 codex');
   const name = typeof input.name === 'string' ? input.name.trim() : '';
   const key = typeof input.key === 'string' ? input.key.trim() : '';
   const description = typeof input.description === 'string'
@@ -589,6 +598,7 @@ export function normalizeDownstreamApiKeyPayload(input: {
   return {
     name,
     key,
+    modelScope,
     allowedUpstreamGroups: normalizeAllowedUpstreamGroups(input.allowedUpstreamGroups),
     description: description || null,
     groupName,

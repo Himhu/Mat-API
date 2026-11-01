@@ -1,3 +1,4 @@
+import { isModelAllowedForScope } from '../../../shared/downstreamModelScope.js';
 import UpstreamGroupSelector, { type UpstreamGroupRef } from './UpstreamGroupSelector.js';
 import React, { useEffect, useMemo, useState } from 'react';
 import CenteredModal from '../../components/CenteredModal.js';
@@ -19,6 +20,7 @@ export type DownstreamExcludedCredentialRef =
   };
 
 export type DownstreamKeyEditorForm = {
+  modelScope: string;
   allowedUpstreamGroups: UpstreamGroupRef[] | null;
   name: string;
   key: string;
@@ -286,12 +288,12 @@ export default function DownstreamKeyEditorModal({
   }, [open]);
 
   const exactModels = useMemo(
-    () => uniqStrings(routeOptions.filter((item) => isExactModelPattern(item.modelPattern)).map((item) => item.modelPattern)).sort((a, b) => a.localeCompare(b)),
-    [routeOptions],
+    () => uniqStrings(routeOptions.filter((item) => isExactModelPattern(item.modelPattern) && isModelAllowedForScope(item.modelPattern, form.modelScope)).map((item) => item.modelPattern)).sort((a, b) => a.localeCompare(b)),
+    [routeOptions, form.modelScope],
   );
   const groupRouteOptions = useMemo(
-    () => routeOptions.filter(isGroupRouteOption),
-    [routeOptions],
+    () => form.modelScope === 'codex' ? [] : routeOptions.filter(isGroupRouteOption),
+    [routeOptions, form.modelScope],
   );
   const validGroupRouteIdSet = useMemo(
     () => new Set(groupRouteOptions.map((route) => route.id)),
@@ -369,7 +371,23 @@ export default function DownstreamKeyEditorModal({
         支持为每个下游密钥独立配置分组、标签、额度与有效期。高级限制项可按需展开。
       </div>
 
-      {open && <UpstreamGroupSelector value={form.allowedUpstreamGroups} onChange={value=>onChange(prev=>({...prev,allowedUpstreamGroups:value}))} allowUnrestricted={!!editingItem}/>}
+      <label className="upstream-group-site-filter">
+        <span className="downstream-key-modal-label">模型用途</span>
+        <select aria-label="模型用途" value={form.modelScope} onChange={event => {
+          const modelScope = event.target.value;
+          onChange(prev => ({
+            ...prev,
+            modelScope,
+            ...(modelScope === 'codex' ? { allowedUpstreamGroups: [], selectedModels: [], selectedGroupRouteIds: [] } : {}),
+          }));
+        }}>
+          <option value="all">不限用途</option>
+          <option value="codex">Codex 专用</option>
+        </select>
+      </label>
+      {form.modelScope === 'codex' && <div className="downstream-key-modal-help">仅允许 GPT-5 及以上文本/编程型号和 Codex 型号；Claude、图片、音频等模型会被拒绝。切换用途后请重新选择上游分组。</div>}
+
+      {open && <UpstreamGroupSelector value={form.allowedUpstreamGroups} onChange={value=>onChange(prev=>({...prev,allowedUpstreamGroups:value}))} allowUnrestricted={!!editingItem && form.modelScope !== 'codex'} modelScope={form.modelScope}/>}
       <div className="downstream-key-modal-grid" style={{ gridTemplateColumns: '1fr' }}>
         <div className="downstream-key-modal-field downstream-key-modal-field-full">
           <div className="downstream-key-modal-label">名称</div>
@@ -469,7 +487,7 @@ export default function DownstreamKeyEditorModal({
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                   <div>
                     <div className="downstream-key-modal-section-title">模型白名单</div>
-                    <div className="downstream-key-modal-help">只展示精确模型；未勾选时默认不允许任何精确模型，可点“全选”一次性放开。</div>
+                    <div className="downstream-key-modal-help">{form.modelScope === 'codex' ? '可进一步限定具体型号；未勾选时允许 Codex 用途范围内的所有型号。' : '只展示精确模型；未勾选时默认不允许任何精确模型，可点“全选”一次性放开。'}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <button type="button" className="btn btn-ghost" style={{ border: '1px solid var(--color-border)' }} onClick={() => onChange((prev) => ({ ...prev, selectedModels: exactModels }))}>全选</button>
@@ -505,7 +523,7 @@ export default function DownstreamKeyEditorModal({
                 </div>
               </div>
 
-              <div className="downstream-key-advanced-panel">
+              {form.modelScope !== 'codex' && <div className="downstream-key-advanced-panel">
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                   <div>
                     <div className="downstream-key-modal-section-title">群组范围</div>
@@ -552,7 +570,7 @@ export default function DownstreamKeyEditorModal({
                     );
                   })}
                 </div>
-              </div>
+              </div>}
 
               <div className="downstream-key-advanced-panel">
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>

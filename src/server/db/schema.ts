@@ -508,6 +508,7 @@ export const downstreamApiKeys = sqliteTable('downstream_api_keys', {
   maxRequests: integer('max_requests'),
   usedRequests: integer('used_requests').default(0),
   supportedModels: text('supported_models'), // JSON array<string>
+  modelScope: text('model_scope').notNull().default('all'), // all | codex
   allowedUpstreamGroups: text('allowed_upstream_groups'), // null: legacy unrestricted; []: deny all; JSON site/group allowlist
   allowedRouteIds: text('allowed_route_ids'), // JSON array<number>
   siteWeightMultipliers: text('site_weight_multipliers'), // JSON object { [siteId]: multiplier }

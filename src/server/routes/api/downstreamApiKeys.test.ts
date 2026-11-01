@@ -955,4 +955,17 @@ describe('downstream api keys routes', () => {
     }
   });
 
+  it('persists Codex scope on create, unrelated edits and authorization', async () => {
+    const created=await app.inject({method:'POST',url:'/api/downstream-keys',payload:{name:'codex',key:'sk-codex-scope',modelScope:'codex'}});
+    expect(created.statusCode).toBe(200);
+    expect(created.json().item.modelScope).toBe('codex');
+    const edited=await app.inject({method:'PUT',url:`/api/downstream-keys/${created.json().item.id}`,payload:{name:'renamed'}});
+    expect(edited.json().item.modelScope).toBe('codex');
+    const {authorizeDownstreamToken}=await import('../../services/downstreamApiKeyService.js');
+    const auth=await authorizeDownstreamToken('sk-codex-scope');
+    expect(auth.ok && auth.policy.modelScope).toBe('codex');
+    const invalid=await app.inject({method:'POST',url:'/api/downstream-keys',payload:{name:'bad',key:'sk-bad-scope',modelScope:'unknown'}});
+    expect(invalid.statusCode).toBe(400);
+  });
+
 });

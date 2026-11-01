@@ -53,4 +53,13 @@ describe('upstream group catalogue', () => {
     expect(await list()).toEqual({items:[],unknownCredentialCount:1});
   });
 
+  it('retains synced token models for group filtering when pricing is unavailable', async () => {
+    const site=await db.insert(schema.sites).values({name:'s',url:'https://s.example.com',platform:'new-api',status:'active'}).returning().get();
+    const account=await db.insert(schema.accounts).values({siteId:site.id,accessToken:'session',status:'active'}).returning().get();
+    const token=await db.insert(schema.accountTokens).values({accountId:account.id,name:'key',token:'secret',tokenGroup:'VIP',tokenGroupConfirmed:true,enabled:true}).returning().get();
+    await db.insert(schema.tokenModelAvailability).values([{tokenId:token.id,modelName:'gpt-6.1-sol',available:true},{tokenId:token.id,modelName:'unavailable',available:false}]).run();
+    pricing.mockRejectedValue(new Error('401'));
+    expect((await list()).items[0]).toMatchObject({group:'VIP',models:['gpt-6.1-sol'],ratios:[],hasUnknownRatio:true});
+  });
+
 });

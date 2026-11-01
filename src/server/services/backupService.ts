@@ -96,6 +96,7 @@ type BackupDownstreamApiKeyRow = Pick<DownstreamApiKeyRow,
   | 'maxCost'
   | 'maxRequests'
   | 'supportedModels'
+  | 'modelScope'
   | 'allowedUpstreamGroups'
   | 'allowedRouteIds'
   | 'siteWeightMultipliers'
@@ -1792,6 +1793,7 @@ async function importAccountsSection(section: AccountsBackupSection): Promise<vo
           maxRequests: row.maxRequests ?? null,
           usedRequests: runtimeDownstream?.usedRequests ?? row.usedRequests ?? 0,
           supportedModels: row.supportedModels ?? null,
+          modelScope: row.modelScope ?? 'all',
           allowedUpstreamGroups: row.allowedUpstreamGroups ?? null,
           allowedRouteIds: row.allowedRouteIds ?? null,
           siteWeightMultipliers: row.siteWeightMultipliers ?? null,

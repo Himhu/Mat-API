@@ -1,1 +1,1 @@
-ALTER TABLE `account_tokens` ADD COLUMN `token_group_confirmed` BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE `downstream_api_keys` ADD COLUMN `model_scope` VARCHAR(191) NOT NULL DEFAULT 'all';

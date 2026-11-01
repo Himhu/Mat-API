@@ -18,6 +18,7 @@ export type DownstreamExcludedCredentialRef =
 export type DownstreamUpstreamGroup = { siteId: number; group: string };
 
 export interface DownstreamRoutingPolicy {
+  modelScope?: string;
   allowedUpstreamGroups?: DownstreamUpstreamGroup[] | null;
   supportedModels: string[];
   allowedRouteIds: number[];

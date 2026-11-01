@@ -1,4 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
+import { isModelAllowedForScope } from '../../../shared/downstreamModelScope.js';
 import { api } from '../../api.js';
 import './UpstreamGroupSelector.css';
 
@@ -12,10 +13,11 @@ export type UpstreamGroupOption = UpstreamGroupRef & {
 };
 const groupKey = (row: UpstreamGroupRef) => JSON.stringify([row.siteId, row.group]);
 
-export default function UpstreamGroupSelector({ value, onChange, allowUnrestricted }: {
+export default function UpstreamGroupSelector({ value, onChange, allowUnrestricted, modelScope = 'all' }: {
   value: UpstreamGroupRef[] | null;
   onChange: (value: UpstreamGroupRef[] | null) => void;
   allowUnrestricted: boolean;
+  modelScope?: string;
 }) {
   const [items, setItems] = useState<UpstreamGroupOption[]>([]);
   const [unknown, setUnknown] = useState(0);
@@ -60,17 +62,18 @@ export default function UpstreamGroupSelector({ value, onChange, allowUnrestrict
     };
   }, [open]);
 
+  const scopedItems = items.filter(row => modelScope === 'all' || row.models.some(model => isModelAllowedForScope(model, modelScope)));
   const selected = new Set((value || []).map(groupKey));
-  const missing = (value || []).filter(row => !items.some(item => groupKey(item) === groupKey(row)));
+  const missing = (value || []).filter(row => !scopedItems.some(item => groupKey(item) === groupKey(row)));
   const siteOptions = new Map<number, string>();
-  for (const row of items) siteOptions.set(row.siteId, row.siteName);
+  for (const row of scopedItems) siteOptions.set(row.siteId, row.siteName);
   for (const row of value || []) {
     if (!siteOptions.has(row.siteId)) siteOptions.set(row.siteId, `站点 #${row.siteId}（当前不可用）`);
   }
   // A refreshed catalogue can remove a site; fall back to viewing all without changing authorization.
   const activeSite = siteFilter === 'all' || siteOptions.has(Number(siteFilter)) ? siteFilter : 'all';
   const matchesSite = (row: UpstreamGroupRef) => activeSite === 'all' || String(row.siteId) === activeSite;
-  const visible = items.filter(row => matchesSite(row) && `${row.siteName} ${row.group}`.toLowerCase().includes(search.trim().toLowerCase()));
+  const visible = scopedItems.filter(row => matchesSite(row) && `${row.siteName} ${row.group}`.toLowerCase().includes(search.trim().toLowerCase()));
   const visibleMissing = missing.filter(matchesSite);
   const visibleSelected = (value || []).filter(matchesSite);
   const sites = new Map<number, { name: string; groups: UpstreamGroupOption[] }>();
@@ -147,7 +150,7 @@ export default function UpstreamGroupSelector({ value, onChange, allowUnrestrict
                           checked={selected.has(groupKey(row))} onChange={e => toggle(row, e.target.checked)} />
                         <span className="upstream-group-identity">
                           <span className="upstream-group-name">{row.group}</span>
-                          <span className="upstream-group-meta">{row.credentialCount} 个可用密钥{row.models.length > 0 ? ` · ${row.models.length} 个模型` : ''}</span>
+                          <span className="upstream-group-meta">{row.credentialCount} 个可用密钥{row.models.length > 0 ? ` · ${row.models.filter(model => isModelAllowedForScope(model, modelScope)).length} 个模型` : ''}</span>
                         </span>
                         <span className={`upstream-group-ratio ${row.ratios.length ? '' : 'is-unknown'}`}>
                           {row.ratios.length ? row.ratios.map(r => `${r} 倍`).join(' / ') : '倍率未知'}
@@ -158,7 +161,7 @@ export default function UpstreamGroupSelector({ value, onChange, allowUnrestrict
                   </fieldset>
                 ))}
                 {!loading && !visible.length && <div className="upstream-group-empty">
-                  {error ? '列表加载失败，请刷新重试。' : search.trim() ? '没有匹配的分组，请尝试其他关键词。' : '暂无可选分组，请先在连接管理中同步上游令牌及分组。'}
+                  {error ? '列表加载失败，请刷新重试。' : search.trim() ? '没有匹配的分组，请尝试其他关键词。' : modelScope === 'codex' ? '暂无已确认支持 Codex 模型的分组，请先同步上游令牌及模型。' : '暂无可选分组，请先在连接管理中同步上游令牌及分组。'}
                 </div>}
                 {visibleMissing.length > 0 && <div className="upstream-group-missing">
                   <div className="upstream-group-meta">已选分组 · {loading ? '核对中' : error ? '暂无法核对' : '当前不可用'}</div>
@@ -183,6 +186,7 @@ export default function UpstreamGroupSelector({ value, onChange, allowUnrestrict
       </div>}
       {value !== null && !loading && !error && missing.length > 0 && <div className="upstream-group-warning">{missing.length} 个已选分组当前不可用，请展开查看。</div>}
       {error && <div className="upstream-group-error" role="alert">分组信息加载失败，请展开后刷新重试。</div>}
+      {modelScope === 'codex' && <div className="upstream-group-note">仅显示支持 Codex 模型的分组，其他用途及模型未知的分组已隐藏。</div>}
       <details className="upstream-group-details">
         <summary>倍率与分组说明{unknown > 0 ? ` · ${unknown} 个密钥分组未确认` : ''}</summary>
         <p>倍率来自上游价格目录；不同站点的模型基础价格可能不同，实际费用以上游账单为准。</p>

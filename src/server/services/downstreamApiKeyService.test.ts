@@ -236,4 +236,14 @@ describe('downstreamApiKeyService', () => {
     }
   });
 
+  it('enforces Codex scope before model wildcards or allowed route grants', async () => {
+    const route=await db.insert(schema.tokenRoutes).values({modelPattern:'claude-opus-4-6',enabled:true}).returning().get();
+    const policy={modelScope:'codex',supportedModels:['*'],allowedRouteIds:[route.id],siteWeightMultipliers:{},excludedSiteIds:[],excludedCredentialRefs:[]};
+    expect(await service.isModelAllowedByPolicyOrAllowedRoutes('claude-opus-4-6',policy)).toBe(false);
+    expect(await service.isModelAllowedByPolicyOrAllowedRoutes('gpt-6.1-sol',policy)).toBe(true);
+    expect(service.isModelAllowedByPolicy('gpt-image-2',policy)).toBe(false);
+    expect(await service.isModelAllowedByPolicyOrAllowedRoutes('claude-opus-4-6',{...policy,supportedModels:[]})).toBe(false);
+    expect(await service.isModelAllowedByPolicyOrAllowedRoutes('gpt-6.1-sol',{...policy,modelScope:'corrupt'})).toBe(false);
+  });
+
 });

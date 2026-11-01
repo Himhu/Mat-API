@@ -3,6 +3,7 @@ import React from 'react';
 export type Range = '24h' | '7d' | 'all';
 
 export type SummaryItem = {
+  modelScope?: string;
   allowedUpstreamGroups?: Array<{siteId:number;group:string}> | null;
   id: number;
   name: string;

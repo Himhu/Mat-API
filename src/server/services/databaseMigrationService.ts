@@ -670,7 +670,7 @@ function buildStatements(
   for (const row of snapshot.accounts.downstreamApiKeys) {
     statements.push({
       table: 'downstream_api_keys',
-      columns: ['id', 'name', 'key', 'description', 'enabled', 'expires_at', 'max_cost', 'used_cost', 'max_requests', 'used_requests', 'supported_models', 'allowed_route_ids', 'allowed_upstream_groups', 'site_weight_multipliers', 'excluded_site_ids', 'excluded_credential_refs', 'last_used_at', 'created_at', 'updated_at'],
+      columns: ['id', 'name', 'key', 'description', 'enabled', 'expires_at', 'max_cost', 'used_cost', 'max_requests', 'used_requests', 'supported_models', 'allowed_route_ids', 'model_scope', 'allowed_upstream_groups', 'site_weight_multipliers', 'excluded_site_ids', 'excluded_credential_refs', 'last_used_at', 'created_at', 'updated_at'],
       values: [
         asNumber(row.id, 0),
         asNullableString(row.name),
@@ -684,6 +684,7 @@ function buildStatements(
         asNumber(row.usedRequests, 0),
         serializeColumnValue('downstream_api_keys', 'supported_models', row.supportedModels, contract),
         serializeColumnValue('downstream_api_keys', 'allowed_route_ids', row.allowedRouteIds, contract),
+        asNullableString(row.modelScope) ?? 'all',
         serializeColumnValue('downstream_api_keys', 'allowed_upstream_groups', row.allowedUpstreamGroups, contract),
         serializeColumnValue('downstream_api_keys', 'site_weight_multipliers', row.siteWeightMultipliers, contract),
         serializeColumnValue('downstream_api_keys', 'excluded_site_ids', row.excludedSiteIds, contract),

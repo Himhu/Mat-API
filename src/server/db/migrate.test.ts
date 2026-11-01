@@ -388,6 +388,7 @@ describe('sqlite migrate bootstrap', () => {
       // must stay missing in this partial-journal fixture too.
       '0020_downstream_api_key_exclusions',
       '0028_downstream_upstream_groups',
+      '0030_downstream_model_scope',
     ]);
     const appliedEntries = journalEntries.filter((entry) => !missingTags.has(entry.tag));
 

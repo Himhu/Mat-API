@@ -14,6 +14,7 @@ import {
   type RouteRoutingStrategy,
 } from './routeRoutingStrategy.js';
 import { type DownstreamRoutingPolicy, EMPTY_DOWNSTREAM_ROUTING_POLICY } from './downstreamPolicyTypes.js';
+import { isModelAllowedForScope } from '../../shared/downstreamModelScope.js';
 import { isUsableAccountToken } from './accountTokenService.js';
 import { getOauthInfoFromAccount } from './oauth/oauthAccount.js';
 import { parseCodexQuotaResetHint } from './oauth/quota.js';
@@ -1294,6 +1295,7 @@ type PricingReferenceRefreshOptions = {
 
 type CandidateEligibilityOptions = {
   requestedModel: string;
+  actualModel?: string;
   bypassSourceModelCheck?: boolean;
   excludeChannelIds?: number[];
   nowIso?: string;
@@ -2000,6 +2002,7 @@ export class TokenRouter {
 
     for (const row of match.channels) {
       const reasonParts = this.getCandidateEligibilityReasons(row, {
+        actualModel: resolveActualModelForSelectedChannel(requestedModel, match.route, mappedModel, row.channel.sourceModel),
         requestedModel,
         bypassSourceModelCheck,
         excludeChannelIds,
@@ -2819,6 +2822,7 @@ export class TokenRouter {
     const nowMs = Date.now();
     const available = match.channels.filter((candidate) => (
       this.getCandidateEligibilityReasons(candidate, {
+        actualModel: resolveActualModelForSelectedChannel(requestedModel, match.route, mappedModel, candidate.channel.sourceModel),
         requestedModel,
         bypassSourceModelCheck,
         excludeChannelIds,
@@ -2954,6 +2958,7 @@ export class TokenRouter {
     const nowMs = Date.now();
     const available = match.channels.filter((candidate) => (
       this.getCandidateEligibilityReasons(candidate, {
+        actualModel: resolveActualModelForSelectedChannel(requestedModel, match.route, mappedModel, candidate.channel.sourceModel),
         requestedModel,
         bypassSourceModelCheck,
         excludeChannelIds,
@@ -3294,6 +3299,10 @@ export class TokenRouter {
     options: CandidateEligibilityOptions,
   ): string[] {
     const reasonParts: string[] = [];
+    if (!isModelAllowedForScope(options.requestedModel, options.downstreamPolicy?.modelScope)
+      || !isModelAllowedForScope(options.actualModel ?? options.requestedModel, options.downstreamPolicy?.modelScope)) {
+      reasonParts.push('模型不在下游密钥允许的模型用途范围内');
+    }
     const bypassSourceModelCheck = options.bypassSourceModelCheck ?? false;
     const excludeChannelIds = options.excludeChannelIds ?? [];
     const nowIso = options.nowIso ?? new Date().toISOString();
@@ -3468,6 +3477,8 @@ export class TokenRouter {
       mappedModel,
       selected.channel.sourceModel,
     );
+
+    if (!isModelAllowedForScope(actualModel, downstreamPolicy.modelScope)) return null;
 
     return {
       ...dispatchCandidate,

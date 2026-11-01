@@ -595,4 +595,23 @@ describe('TokenRouter downstream policy', () => {
 
   });
 
+  it('keeps Codex requests inside scope through display names, preferred channels and model mappings', async () => {
+    const site=await db.insert(schema.sites).values({name:'scope',url:'https://scope.example.com',platform:'new-api'}).returning().get();
+    const account=await db.insert(schema.accounts).values({siteId:site.id,accessToken:'session',apiToken:'key',status:'active'}).returning().get();
+    const route=await db.insert(schema.tokenRoutes).values({modelPattern:'*',displayName:'gpt-6.1-sol',enabled:true}).returning().get();
+    const channels=[];
+    for (const sourceModel of ['claude-opus-4-6','gpt-6.1-sol']) channels.push(await db.insert(schema.routeChannels).values({routeId:route.id,accountId:account.id,sourceModel,enabled:true}).returning().get());
+    const policy={modelScope:'codex',supportedModels:['*'],allowedRouteIds:[route.id],siteWeightMultipliers:{},excludedSiteIds:[],excludedCredentialRefs:[]};
+    const router=new TokenRouter();
+    expect((await router.selectChannel('gpt-6.1-sol',policy))?.channel.id).toBe(channels[1].id);
+    expect(await router.selectPreferredChannel('gpt-6.1-sol',channels[0].id,policy)).toBeNull();
+    expect(await router.selectNextChannel('gpt-6.1-sol',[channels[1].id],policy)).toBeNull();
+    const decision=await router.explainSelection('gpt-6.1-sol',[],policy);
+    expect(decision.candidates.filter(c=>c.eligible).map(c=>c.channelId)).toEqual([channels[1].id]);
+    expect(await router.selectChannel('claude-opus-4-6',policy)).toBeNull();
+    await db.update(schema.tokenRoutes).set({displayName:null,modelMapping:JSON.stringify({'gpt-6.1-sol':'claude-opus-4-6'})}).where(eq(schema.tokenRoutes.id,route.id)).run();
+    invalidateTokenRouterCache();
+    expect(await router.selectChannel('gpt-6.1-sol',policy)).toBeNull();
+  });
+
 });

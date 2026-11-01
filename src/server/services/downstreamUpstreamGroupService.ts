@@ -22,6 +22,13 @@ export async function listDownstreamUpstreamGroups(): Promise<{
   const rows: Array<{accounts:typeof schema.accounts.$inferSelect;sites:typeof schema.sites.$inferSelect}> = await db.select().from(schema.accounts)
     .innerJoin(schema.sites, eq(schema.accounts.siteId, schema.sites.id)).all();
   const tokens: Array<typeof schema.accountTokens.$inferSelect> = await db.select().from(schema.accountTokens).all();
+  const availableModels: Array<typeof schema.tokenModelAvailability.$inferSelect> = await db.select().from(schema.tokenModelAvailability)
+    .where(eq(schema.tokenModelAvailability.available, true)).all();
+  const modelsByToken = new Map<number, string[]>();
+  for (const row of availableModels) {
+    if (!modelsByToken.has(row.tokenId)) modelsByToken.set(row.tokenId, []);
+    modelsByToken.get(row.tokenId)!.push(row.modelName);
+  }
   const items = new Map<string, DownstreamUpstreamGroupOption>();
   let unknownCredentialCount = 0;
   const accounts = rows.filter(({accounts: a, sites: s}) => a.status === 'active' && s.status === 'active');
@@ -46,7 +53,8 @@ export async function listDownstreamUpstreamGroups(): Promise<{
         if (typeof ratio === 'number' && Number.isFinite(ratio) && ratio >= 0) item.ratios = [...new Set([...item.ratios, ratio])].sort((a,b)=>a-b);
         else item.hasUnknownRatio = true;
         item.credentialCount += usable.filter((t) => t.tokenGroupConfirmed && t.tokenGroup?.trim() === group).length;
-        item.models = [...new Set([...item.models, ...(catalog?.models || []).filter((m) => m.enableGroups.includes(group)).map((m) => m.modelName)])].sort();
+        const syncedModels = usable.filter(t => t.tokenGroupConfirmed && t.tokenGroup?.trim() === group).flatMap(t => modelsByToken.get(t.id) || []);
+        item.models = [...new Set([...item.models, ...syncedModels, ...(catalog?.models || []).filter((m) => m.enableGroups.includes(group)).map((m) => m.modelName)])].sort();
         items.set(key, item);
       }
     }

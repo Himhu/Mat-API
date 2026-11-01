@@ -31,6 +31,7 @@ import {
 type Status = 'all' | 'enabled' | 'disabled';
 
 type DownstreamApiKeyItem = {
+  modelScope?: string;
   allowedUpstreamGroups?: Array<{siteId:number;group:string}> | null;
   id: number;
   name: string;
@@ -338,7 +339,8 @@ function buildEditorForm(
     : defaultSelections.selectedGroupRouteIds;
 
   return {
-    allowedUpstreamGroups: item ? (item.allowedUpstreamGroups ?? null) : [],
+    modelScope: item?.modelScope ?? 'all',
+    allowedUpstreamGroups: item ? (item.allowedUpstreamGroups ?? (item.modelScope === 'codex' ? [] : null)) : [],
     name: item?.name || '',
     key: item?.key || '',
     description: item?.description || '',
@@ -634,6 +636,7 @@ export default function DownstreamKeys() {
         key: raw?.key,
         keyMasked: raw?.keyMasked || item.keyMasked,
         description: raw?.description ?? item.description,
+        modelScope: raw?.modelScope ?? item.modelScope ?? 'all',
         allowedUpstreamGroups: raw?.allowedUpstreamGroups ?? item.allowedUpstreamGroups ?? null,
         groupName: raw?.groupName ?? item.groupName,
         tags: raw?.tags ?? item.tags,
@@ -758,7 +761,7 @@ export default function DownstreamKeys() {
     }
 
     setEditorForm((prev) => {
-      if (prev.selectedModels.length > 0 || prev.selectedGroupRouteIds.length > 0) {
+      if (prev.modelScope === 'codex' || prev.selectedModels.length > 0 || prev.selectedGroupRouteIds.length > 0) {
         return prev;
       }
       return {
@@ -866,6 +869,7 @@ export default function DownstreamKeys() {
         return;
       }
       const payload = {
+        modelScope: editorForm.modelScope,
         allowedUpstreamGroups: editorForm.allowedUpstreamGroups,
         name,
         key,
@@ -1219,6 +1223,7 @@ export default function DownstreamKeys() {
                   />
                   {row.description ? <MobileField label="备注" value={row.description} stacked /> : null}
                   <MobileField label="密钥分类" value={row.groupName || '未分组'} />
+                  <MobileField label="模型用途" value={row.modelScope === 'codex' ? 'Codex 专用' : '不限用途'} stacked />
                   <MobileField label="上游分组" value={row.allowedUpstreamGroups == null ? '不限（兼容原配置）' : row.allowedUpstreamGroups.map(g=>`#${g.siteId} / ${g.group}`).join('、') || '未授权'} stacked />
                   <MobileField label="标签" value={summarizeTags(row.tags || [])} stacked />
                   <MobileField label="模型" value={summarizeModelSelection(row.supportedModels || [])} stacked />
@@ -1278,6 +1283,7 @@ export default function DownstreamKeys() {
                       <td>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                           <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>模型：<span style={{ color: 'var(--color-text-primary)' }}>{summarizeModelSelection(row.supportedModels || [])}</span></div>
+                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>模型用途：{row.modelScope === 'codex' ? 'Codex 专用' : '不限用途'}</div>
                           <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>上游分组：{row.allowedUpstreamGroups == null ? '不限（兼容原配置）' : row.allowedUpstreamGroups.map(g=>`#${g.siteId} / ${g.group}`).join('、') || '未授权'}</div>
                           <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>群组：<span style={{ color: 'var(--color-text-primary)' }}>{summarizeRouteSelection(row.allowedRouteIds || [], routeMap)}</span></div>
                           <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>标签：<span style={{ color: 'var(--color-text-primary)' }}>{summarizeTags(row.tags || [])}</span></div>

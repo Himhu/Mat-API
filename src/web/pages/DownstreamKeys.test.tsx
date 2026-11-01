@@ -334,6 +334,7 @@ describe('DownstreamKeys page', () => {
       const emptySave = root!.root.findAll((node) => node.type === 'button' && collectText(node).includes('创建密钥'))[0];
       await act(async () => emptySave.props.onClick());
       expect(apiMock.createDownstreamApiKey).not.toHaveBeenCalled();
+      await act(async () => root!.root.findByProps({'aria-label':'选择上游分组'}).props.onClick());
       await act(async () => root!.root.findByProps({'aria-label':'选择 站点A / VIP'}).props.onChange({target:{checked:true}}));
       const saveBtn = root!.root.findAll((node) => node.type === 'button' && collectText(node).includes('创建密钥'))[0];
       await act(async () => {
@@ -608,6 +609,7 @@ describe('DownstreamKeys page', () => {
       });
       await flushMicrotasks();
 
+      await act(async () => root!.root.findByProps({'aria-label':'选择上游分组'}).props.onClick());
       await act(async () => root!.root.findByProps({'aria-label':'选择 站点A / VIP'}).props.onChange({target:{checked:true}}));
       const saveBtn = root!.root.findAll((node) => node.type === 'button' && collectText(node).includes('创建密钥'))[0];
       await act(async () => {
@@ -676,6 +678,7 @@ describe('DownstreamKeys page', () => {
       });
       await flushMicrotasks();
 
+      await act(async () => root!.root.findByProps({'aria-label':'选择上游分组'}).props.onClick());
       await act(async () => root!.root.findByProps({'aria-label':'选择 站点A / VIP'}).props.onChange({target:{checked:true}}));
       const saveBtn = root!.root.findAll((node) => node.type === 'button' && collectText(node).includes('创建密钥'))[0];
       await act(async () => {
@@ -773,6 +776,7 @@ describe('DownstreamKeys page', () => {
       });
       await flushMicrotasks();
 
+      await act(async () => root!.root.findByProps({'aria-label':'选择上游分组'}).props.onClick());
       await act(async () => root!.root.findByProps({'aria-label':'选择 站点A / VIP'}).props.onChange({target:{checked:true}}));
       const saveBtn = root!.root.findAll((node) => node.type === 'button' && collectText(node).includes('创建密钥'))[0];
       await act(async () => {
@@ -897,6 +901,7 @@ describe('DownstreamKeys page', () => {
       });
       await flushMicrotasks();
 
+      await act(async () => root!.root.findByProps({'aria-label':'选择上游分组'}).props.onClick());
       await act(async () => root!.root.findByProps({'aria-label':'选择 站点A / VIP'}).props.onChange({target:{checked:true}}));
       const saveBtn = root!.root.findAll((node) => node.type === 'button' && collectText(node).includes('创建密钥'))[0];
       await act(async () => {

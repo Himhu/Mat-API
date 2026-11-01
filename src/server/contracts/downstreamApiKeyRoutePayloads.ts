@@ -1,3 +1,4 @@
+import { isValidModelScope } from '../../shared/downstreamModelScope.js';
 import { z } from 'zod';
 
 const downstreamExcludedCredentialRefSchema = z.union([
@@ -25,7 +26,7 @@ const downstreamApiKeyPayloadSchema = z.object({
   maxCost: z.union([z.number(), z.string(), z.null()]).optional(),
   maxRequests: z.union([z.number(), z.string(), z.null()]).optional(),
   supportedModels: z.union([z.string(), z.array(z.string())]).optional(),
-  modelScope: z.enum(['all', 'codex']).optional(),
+  modelScope: z.string().max(100).refine(isValidModelScope, '无效的模型品牌').optional(),
   allowedUpstreamGroups: z.array(z.object({siteId: z.number().int().positive(), group: z.string().trim().min(1).max(200)})).max(1000).nullable().optional(),
   allowedRouteIds: z.union([z.string(), z.array(z.union([z.number(), z.string()]))]).optional(),
   siteWeightMultipliers: z.union([

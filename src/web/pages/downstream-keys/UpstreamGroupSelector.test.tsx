@@ -73,7 +73,7 @@ describe('upstream group selector', () => {
     await act(async()=>root!.unmount());
   });
 
-  it('shows only Codex-capable groups and sites under Codex scope', async () => {
+  it.each([['codex', ['all','1'], ['选择 A / GPT']], ['brand:OpenAI', ['all','1','2'], ['选择 A / GPT','选择 Image / images']], ['brand:Anthropic', ['all','1'], ['选择 A / Claude']]])('filters groups and sites for %s', async (modelScope, sites, groups) => {
     load.mockResolvedValue({items:[
       {siteId:1,siteName:'A',group:'GPT',ratios:[],hasUnknownRatio:true,credentialCount:1,models:['gpt-6.1-sol']},
       {siteId:1,siteName:'A',group:'Claude',ratios:[],hasUnknownRatio:true,credentialCount:1,models:['claude-opus-4-6']},
@@ -81,10 +81,10 @@ describe('upstream group selector', () => {
       {siteId:3,siteName:'Unknown',group:'Codex by name only',ratios:[],hasUnknownRatio:true,credentialCount:1,models:[]},
     ],unknownCredentialCount:0});
     let root:ReturnType<typeof create>;
-    await act(async()=>{root=create(<UpstreamGroupSelector value={[]} onChange={vi.fn()} allowUnrestricted={false} modelScope="codex"/>);});
-    expect(root!.root.findAllByType('option').map(o=>o.props.value)).toEqual(['all','1']);
+    await act(async()=>{root=create(<UpstreamGroupSelector value={[]} onChange={vi.fn()} allowUnrestricted={false} modelScope={modelScope as string}/>);});
+    expect(root!.root.findAllByType('option').map(o=>o.props.value)).toEqual(sites);
     await act(async()=>root!.root.findByProps({'aria-label':'选择上游分组'}).props.onClick());
-    expect(root!.root.findAllByType('input').filter(n=>n.props.type==='checkbox').map(n=>n.props['aria-label'])).toEqual(['选择 A / GPT']);
+    expect(root!.root.findAllByType('input').filter(n=>n.props.type==='checkbox').map(n=>n.props['aria-label'])).toEqual(groups);
     await act(async()=>root!.unmount());
   });
 

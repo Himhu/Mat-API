@@ -7,6 +7,7 @@ import { installAccountsSnapshotCompat } from './testApiCompat.js';
 
 const { apiMock } = vi.hoisted(() => ({
   apiMock: {
+    getModelsMarketplace: vi.fn(),
     getDownstreamUpstreamGroups: vi.fn(),
     getDownstreamApiKeysSummary: vi.fn(),
     getDownstreamApiKeys: vi.fn(),
@@ -130,6 +131,7 @@ function buildRawItem(overrides?: Partial<any>) {
 beforeEach(() => {
   vi.clearAllMocks();
   installAccountsSnapshotCompat(apiMock);
+  apiMock.getModelsMarketplace.mockResolvedValue({models: ['gpt-6.1-sol', 'gpt-image-2', 'claude-opus-4-6', 'gemini-3-pro'].map(name => ({name}))});
   apiMock.getDownstreamUpstreamGroups.mockResolvedValue({items:[{siteId:201,siteName:'站点A',group:'VIP',ratios:[0.8],hasUnknownRatio:false,credentialCount:1,models:[]}],unknownCredentialCount:0});
   (globalThis as any).document = {
     body: { style: {} },
@@ -922,7 +924,7 @@ describe('DownstreamKeys page', () => {
       root?.unmount();
     }
   });
-  it('creates a Codex-scoped key with only matching upstream groups', async () => {
+  it('creates a marketplace-brand key with only matching upstream groups', async () => {
     apiMock.getDownstreamUpstreamGroups.mockResolvedValue({items:[
       {siteId:201,siteName:'站点A',group:'GPT',ratios:[],hasUnknownRatio:true,credentialCount:1,models:['gpt-6.1-sol']},
       {siteId:201,siteName:'站点A',group:'Claude',ratios:[],hasUnknownRatio:true,credentialCount:1,models:['claude-opus-4-6']},
@@ -933,7 +935,9 @@ describe('DownstreamKeys page', () => {
       await flushMicrotasks();
       await act(async()=>root.root.findAll(n=>n.type==='button' && collectText(n).includes('新增下游密钥'))[0].props.onClick());
       await flushMicrotasks();
-      await act(async()=>root.root.findByProps({'aria-label':'模型用途'}).props.onChange({target:{value:'codex'}}));
+      expect(apiMock.getModelsMarketplace).toHaveBeenCalledWith({includePricing:false});
+      expect(root.root.findByProps({'aria-label':'模型品牌'}).findAllByType('option').map(n => n.props.value)).toEqual(['all','brand:OpenAI','brand:Anthropic','brand:Google']);
+      await act(async()=>root.root.findByProps({'aria-label':'模型品牌'}).props.onChange({target:{value:'brand:OpenAI'}}));
       await act(async()=>root.root.findByProps({'aria-label':'选择上游分组'}).props.onClick());
       expect(root.root.findAllByProps({'aria-label':'选择 站点A / Claude'})).toHaveLength(0);
       await act(async()=>root.root.findByProps({'aria-label':'选择 站点A / GPT'}).props.onChange({target:{checked:true}}));
@@ -942,7 +946,31 @@ describe('DownstreamKeys page', () => {
         root.root.findByProps({placeholder:'sk-...'}).props.onChange({target:{value:'sk-codex-only'}});
       });
       await act(async()=>root.root.findAll(n=>n.type==='button' && collectText(n)==='创建密钥')[0].props.onClick());
-      expect(apiMock.createDownstreamApiKey).toHaveBeenCalledWith(expect.objectContaining({modelScope:'codex',allowedUpstreamGroups:[{siteId:201,group:'GPT'}],supportedModels:[],allowedRouteIds:[]}));
+      expect(apiMock.createDownstreamApiKey).toHaveBeenCalledWith(expect.objectContaining({modelScope:'brand:OpenAI',allowedUpstreamGroups:[{siteId:201,group:'GPT'}],supportedModels:[],allowedRouteIds:[]}));
+    } finally {root?.unmount();}
+  });
+
+  it.each(['codex', 'brand:Anthropic'])('preserves saved %s when marketplace loading fails and retries', async (modelScope) => {
+    const restrictions = {modelScope, allowedUpstreamGroups:[{siteId:201,group:'VIP'}]};
+    apiMock.getDownstreamApiKeysSummary.mockResolvedValue({success:true,items:[buildSummaryItem(restrictions)]});
+    apiMock.getDownstreamApiKeys.mockResolvedValue({success:true,items:[buildRawItem(restrictions)]});
+    apiMock.getModelsMarketplace.mockRejectedValueOnce(new Error('offline'));
+    let root!: WebTestRenderer;
+    try {
+      await act(async()=>{root=create(<MemoryRouter><ToastProvider><DownstreamKeys/></ToastProvider></MemoryRouter>);});
+      await flushMicrotasks();
+      await act(async()=>root.root.findAll(n=>n.type==='button' && collectText(n)==='编辑')[0].props.onClick());
+      await flushMicrotasks();
+      const selector=()=>root.root.findByProps({'aria-label':'模型品牌'});
+      expect(selector().props.value).toBe(modelScope);
+      expect(selector().findAllByType('option').map(n=>n.props.value)).toContain(modelScope);
+      expect(collectText(root.root)).toContain('模型广场品牌加载失败');
+      await act(async()=>root.root.findAll(n=>n.type==='button' && collectText(n)==='重试')[0].props.onClick());
+      await flushMicrotasks();
+      expect(selector().props.value).toBe(modelScope);
+      expect(collectText(root.root)).not.toContain('模型广场品牌加载失败');
+      expect(selector().findAllByType('option').map(n=>n.props.value)).toContain('brand:Google');
+      expect(apiMock.updateDownstreamApiKey).not.toHaveBeenCalled();
     } finally {root?.unmount();}
   });
 

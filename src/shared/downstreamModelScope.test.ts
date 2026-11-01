@@ -13,4 +13,16 @@ describe('Codex model scope', () => {
     expect(isModelAllowedForScope('claude-opus-4-6', undefined)).toBe(true);
     expect(isModelAllowedForScope('gpt-5.4', 'corrupt')).toBe(false);
   });
+  it('uses the marketplace brand classifier for brand restrictions', () => {
+    expect(isModelAllowedForScope('gpt-6.1-sol','brand:OpenAI')).toBe(true);
+    expect(isModelAllowedForScope('gpt-image-2','brand:OpenAI')).toBe(true);
+    expect(isModelAllowedForScope('claude-opus-4-6','brand:OpenAI')).toBe(false);
+    expect(isModelAllowedForScope('claude-opus-4-6','brand:Anthropic')).toBe(true);
+    expect(isModelAllowedForScope('gemini-3-pro','brand:Google')).toBe(true);
+    expect(isModelAllowedForScope('gpt-6.1-sol','brand:Google')).toBe(false);
+    expect(isModelAllowedForScope('unregistered-model','brand:__other__')).toBe(true);
+    expect(isModelAllowedForScope('gpt-6.1-sol','brand:__other__')).toBe(false);
+    expect(isModelAllowedForScope('unregistered-model','brand:typo')).toBe(false);
+  });
+
 });

@@ -1,3 +1,4 @@
+import { getModelScopeLabel } from '../../shared/downstreamModelScope.js';
 import React, { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { api } from '../api.js';
 import CenteredModal from '../components/CenteredModal.js';
@@ -340,7 +341,7 @@ function buildEditorForm(
 
   return {
     modelScope: item?.modelScope ?? 'all',
-    allowedUpstreamGroups: item ? (item.allowedUpstreamGroups ?? (item.modelScope === 'codex' ? [] : null)) : [],
+    allowedUpstreamGroups: item ? (item.allowedUpstreamGroups ?? (item.modelScope && item.modelScope !== 'all' ? [] : null)) : [],
     name: item?.name || '',
     key: item?.key || '',
     description: item?.description || '',
@@ -761,7 +762,7 @@ export default function DownstreamKeys() {
     }
 
     setEditorForm((prev) => {
-      if (prev.modelScope === 'codex' || prev.selectedModels.length > 0 || prev.selectedGroupRouteIds.length > 0) {
+      if (prev.modelScope !== 'all' || prev.selectedModels.length > 0 || prev.selectedGroupRouteIds.length > 0) {
         return prev;
       }
       return {
@@ -1223,7 +1224,7 @@ export default function DownstreamKeys() {
                   />
                   {row.description ? <MobileField label="备注" value={row.description} stacked /> : null}
                   <MobileField label="密钥分类" value={row.groupName || '未分组'} />
-                  <MobileField label="模型用途" value={row.modelScope === 'codex' ? 'Codex 专用' : '不限用途'} stacked />
+                  <MobileField label="模型品牌" value={getModelScopeLabel(row.modelScope)} stacked />
                   <MobileField label="上游分组" value={row.allowedUpstreamGroups == null ? '不限（兼容原配置）' : row.allowedUpstreamGroups.map(g=>`#${g.siteId} / ${g.group}`).join('、') || '未授权'} stacked />
                   <MobileField label="标签" value={summarizeTags(row.tags || [])} stacked />
                   <MobileField label="模型" value={summarizeModelSelection(row.supportedModels || [])} stacked />
@@ -1283,7 +1284,7 @@ export default function DownstreamKeys() {
                       <td>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                           <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>模型：<span style={{ color: 'var(--color-text-primary)' }}>{summarizeModelSelection(row.supportedModels || [])}</span></div>
-                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>模型用途：{row.modelScope === 'codex' ? 'Codex 专用' : '不限用途'}</div>
+                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>模型品牌：{getModelScopeLabel(row.modelScope)}</div>
                           <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>上游分组：{row.allowedUpstreamGroups == null ? '不限（兼容原配置）' : row.allowedUpstreamGroups.map(g=>`#${g.siteId} / ${g.group}`).join('、') || '未授权'}</div>
                           <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>群组：<span style={{ color: 'var(--color-text-primary)' }}>{summarizeRouteSelection(row.allowedRouteIds || [], routeMap)}</span></div>
                           <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>标签：<span style={{ color: 'var(--color-text-primary)' }}>{summarizeTags(row.tags || [])}</span></div>

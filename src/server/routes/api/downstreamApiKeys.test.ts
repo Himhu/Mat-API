@@ -968,4 +968,19 @@ describe('downstream api keys routes', () => {
     expect(invalid.statusCode).toBe(400);
   });
 
+  it('persists a marketplace brand scope and rejects invented brands', async () => {
+    const created=await app.inject({method:'POST',url:'/api/downstream-keys',payload:{name:'brand',key:'sk-brand-scope',modelScope:'brand:Anthropic'}});
+    expect(created.statusCode).toBe(200);
+    expect(created.json().item.modelScope).toBe('brand:Anthropic');
+    const {authorizeDownstreamToken,isModelAllowedByPolicyOrAllowedRoutes}=await import('../../services/downstreamApiKeyService.js');
+    const auth=await authorizeDownstreamToken('sk-brand-scope');
+    expect(auth.ok).toBe(true);
+    if(auth.ok){
+      expect(await isModelAllowedByPolicyOrAllowedRoutes('claude-opus-4-6',auth.policy)).toBe(true);
+      expect(await isModelAllowedByPolicyOrAllowedRoutes('gpt-6.1-sol',{...auth.policy,supportedModels:['*']})).toBe(false);
+    }
+    const invalid=await app.inject({method:'POST',url:'/api/downstream-keys',payload:{name:'bad',key:'sk-bad-brand',modelScope:'brand:typo'}});
+    expect(invalid.statusCode).toBe(400);
+  });
+
 });

@@ -1,4 +1,6 @@
-import { isModelAllowedForScope } from '../../../shared/downstreamModelScope.js';
+import { api } from '../../api.js';
+import { getBrand } from '../../components/brandRegistry.js';
+import { isModelAllowedForScope, getModelScopeLabel } from '../../../shared/downstreamModelScope.js';
 import UpstreamGroupSelector, { type UpstreamGroupRef } from './UpstreamGroupSelector.js';
 import React, { useEffect, useMemo, useState } from 'react';
 import CenteredModal from '../../components/CenteredModal.js';
@@ -276,6 +278,29 @@ export default function DownstreamKeyEditorModal({
   const [siteSearch, setSiteSearch] = useState('');
   const [credentialSearch, setCredentialSearch] = useState('');
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [brandOptions, setBrandOptions] = useState<Array<{ value: string; label: string; count: number }>>([]);
+  const [brandsLoading, setBrandsLoading] = useState(false);
+  const [brandsError, setBrandsError] = useState(false);
+  const [brandRevision, setBrandRevision] = useState(0);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setBrandsLoading(true);
+    setBrandsError(false);
+    Promise.resolve().then(() => api.getModelsMarketplace({ includePricing: false })).then(result => {
+      if (cancelled) return;
+      const counts = new Map<string, number>();
+      for (const model of result.models || []) {
+        const brand = getBrand(model.name)?.name ?? '__other__';
+        counts.set(brand, (counts.get(brand) || 0) + 1);
+      }
+      setBrandOptions([...counts].map(([brand, count]) => ({ value: `brand:${brand}`, label: brand === '__other__' ? '其他' : brand, count }))
+        .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)));
+    }).catch(() => { if (!cancelled) setBrandsError(true); })
+      .finally(() => { if (!cancelled) setBrandsLoading(false); });
+    return () => { cancelled = true; };
+  }, [open, brandRevision]);
 
   useEffect(() => {
     if (!open) {
@@ -292,7 +317,7 @@ export default function DownstreamKeyEditorModal({
     [routeOptions, form.modelScope],
   );
   const groupRouteOptions = useMemo(
-    () => form.modelScope === 'codex' ? [] : routeOptions.filter(isGroupRouteOption),
+    () => form.modelScope !== 'all' ? [] : routeOptions.filter(isGroupRouteOption),
     [routeOptions, form.modelScope],
   );
   const validGroupRouteIdSet = useMemo(
@@ -372,22 +397,28 @@ export default function DownstreamKeyEditorModal({
       </div>
 
       <label className="upstream-group-site-filter">
-        <span className="downstream-key-modal-label">模型用途</span>
-        <select aria-label="模型用途" value={form.modelScope} onChange={event => {
+        <span className="downstream-key-modal-label">模型品牌</span>
+        <select aria-label="模型品牌" value={form.modelScope} onChange={event => {
           const modelScope = event.target.value;
           onChange(prev => ({
             ...prev,
             modelScope,
-            ...(modelScope === 'codex' ? { allowedUpstreamGroups: [], selectedModels: [], selectedGroupRouteIds: [] } : {}),
+            ...(modelScope !== 'all' ? { allowedUpstreamGroups: [], selectedModels: [], selectedGroupRouteIds: [] } : {}),
           }));
         }}>
-          <option value="all">不限用途</option>
-          <option value="codex">Codex 专用</option>
+          <option value="all">全部品牌（不限）</option>
+          {brandOptions.map(option => <option key={option.value} value={option.value}>{option.label}（{option.count} 个模型）</option>)}
+          {form.modelScope !== 'all' && !brandOptions.some(option => option.value === form.modelScope) && (
+            <option value={form.modelScope}>{getModelScopeLabel(form.modelScope)}{form.modelScope !== 'codex' ? '（当前不在模型广场）' : ''}</option>
+          )}
         </select>
       </label>
+      {brandsLoading && <div className="downstream-key-modal-help" role="status">正在读取模型广场品牌…</div>}
+      {brandsError && <div className="downstream-key-modal-help" role="alert">模型广场品牌加载失败。<button type="button" className="btn btn-link" onClick={() => setBrandRevision(n => n + 1)}>重试</button></div>}
+      {form.modelScope.startsWith('brand:') && <div className="downstream-key-modal-help">品牌与模型广场一致，仅允许所选品牌的模型。切换品牌后请重新选择上游分组；OpenAI 包含其文本、图片、音频等型号。</div>}
       {form.modelScope === 'codex' && <div className="downstream-key-modal-help">仅允许 GPT-5 及以上文本/编程型号和 Codex 型号；Claude、图片、音频等模型会被拒绝。切换用途后请重新选择上游分组。</div>}
 
-      {open && <UpstreamGroupSelector value={form.allowedUpstreamGroups} onChange={value=>onChange(prev=>({...prev,allowedUpstreamGroups:value}))} allowUnrestricted={!!editingItem && form.modelScope !== 'codex'} modelScope={form.modelScope}/>}
+      {open && <UpstreamGroupSelector value={form.allowedUpstreamGroups} onChange={value=>onChange(prev=>({...prev,allowedUpstreamGroups:value}))} allowUnrestricted={!!editingItem && form.modelScope === 'all'} modelScope={form.modelScope}/>}
       <div className="downstream-key-modal-grid" style={{ gridTemplateColumns: '1fr' }}>
         <div className="downstream-key-modal-field downstream-key-modal-field-full">
           <div className="downstream-key-modal-label">名称</div>
@@ -487,7 +518,7 @@ export default function DownstreamKeyEditorModal({
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                   <div>
                     <div className="downstream-key-modal-section-title">模型白名单</div>
-                    <div className="downstream-key-modal-help">{form.modelScope === 'codex' ? '可进一步限定具体型号；未勾选时允许 Codex 用途范围内的所有型号。' : '只展示精确模型；未勾选时默认不允许任何精确模型，可点“全选”一次性放开。'}</div>
+                    <div className="downstream-key-modal-help">{form.modelScope !== 'all' ? '可进一步限定具体型号；未勾选时允许当前分类范围内的所有型号。' : '只展示精确模型；未勾选时默认不允许任何精确模型，可点“全选”一次性放开。'}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <button type="button" className="btn btn-ghost" style={{ border: '1px solid var(--color-border)' }} onClick={() => onChange((prev) => ({ ...prev, selectedModels: exactModels }))}>全选</button>
@@ -523,7 +554,7 @@ export default function DownstreamKeyEditorModal({
                 </div>
               </div>
 
-              {form.modelScope !== 'codex' && <div className="downstream-key-advanced-panel">
+              {form.modelScope === 'all' && <div className="downstream-key-advanced-panel">
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                   <div>
                     <div className="downstream-key-modal-section-title">群组范围</div>

@@ -1,4 +1,4 @@
-import { isModelAllowedForScope } from '../../shared/downstreamModelScope.js';
+import { isModelAllowedForScope, isValidModelScope } from '../../shared/downstreamModelScope.js';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { minimatch } from 'minimatch';
 import { db, schema } from '../db/index.js';
@@ -565,7 +565,7 @@ export function normalizeDownstreamApiKeyPayload(input: {
   excludedCredentialRefs?: unknown;
 }) {
   const modelScope = input.modelScope === undefined ? 'all' : input.modelScope;
-  if (modelScope !== 'all' && modelScope !== 'codex') throw new Error('模型用途必须为 all 或 codex');
+  if (!isValidModelScope(modelScope)) throw new Error('无效的模型品牌');
   const name = typeof input.name === 'string' ? input.name.trim() : '';
   const key = typeof input.key === 'string' ? input.key.trim() : '';
   const description = typeof input.description === 'string'
@@ -598,7 +598,7 @@ export function normalizeDownstreamApiKeyPayload(input: {
   return {
     name,
     key,
-    modelScope,
+    modelScope: modelScope as string,
     allowedUpstreamGroups: normalizeAllowedUpstreamGroups(input.allowedUpstreamGroups),
     description: description || null,
     groupName,
